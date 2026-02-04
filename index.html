@@ -1,0 +1,347 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
+<title>RainWater - Pixel Defense</title>
+
+<!-- FIXED GOOGLE FONT -->
+<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
+
+<style>
+*{
+margin:0;
+padding:0;
+box-sizing:border-box;
+-webkit-tap-highlight-color:transparent;
+}
+
+html,body{
+width:100%;
+height:100%;
+overflow:hidden;
+touch-action:none;
+font-family:'Press Start 2P', cursive;
+
+/* 👉 CHANGE BACKGROUND IMAGE HERE */
+background-image:url('https://raw.githubusercontent.com/USERNAME/REPO/main/bg.png');
+background-size:cover;
+background-position:center;
+background-attachment:fixed;
+}
+
+#gameCanvas{
+display:block;
+image-rendering:pixelated;
+}
+
+/* MENUS */
+.menu-screen{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.95);
+display:flex;
+flex-direction:column;
+justify-content:center;
+align-items:center;
+z-index:1000;
+}
+
+.menu-title{
+font-size:42px;
+color:#4af;
+text-shadow:4px 4px 0 #048,0 0 20px #4af;
+margin-bottom:50px;
+animation:pulse 2s infinite;
+}
+
+@keyframes pulse{
+0%,100%{transform:scale(1)}
+50%{transform:scale(1.05)}
+}
+
+.menu-button{
+background:linear-gradient(180deg,#4af,#048);
+color:#fff;
+border:4px solid #fff;
+padding:18px 45px;
+margin:12px;
+font-size:18px;
+cursor:pointer;
+box-shadow:0 8px 0 #024;
+}
+
+.menu-button:active{
+transform:translateY(4px);
+box-shadow:0 4px 0 #024;
+}
+
+/* HUD */
+#hud{
+position:fixed;
+top:15px;
+left:15px;
+color:#fff;
+font-size:12px;
+z-index:10;
+text-shadow:2px 2px #000;
+display:none;
+}
+
+#shopCorner{
+position:fixed;
+bottom:15px;
+right:15px;
+background:rgba(0,0,0,.8);
+border:3px solid #4af;
+padding:10px;
+color:#fd0;
+cursor:pointer;
+display:none;
+}
+
+#upgradeShop{
+position:fixed;
+inset:0;
+background:rgba(0,0,0,.95);
+display:none;
+overflow:auto;
+z-index:999;
+padding:20px;
+}
+
+.shop-header{
+text-align:center;
+color:#4af;
+font-size:26px;
+margin-bottom:20px;
+}
+
+.upgrades-container{
+display:grid;
+grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
+gap:15px;
+}
+
+.upgrade-box{
+border:3px solid #4af;
+padding:12px;
+cursor:pointer;
+background:#0a1a2a;
+}
+
+.upgrade-details{display:none;font-size:10px}
+
+.upgrade-box.expanded .upgrade-details{display:block}
+
+.buy-button{
+margin-top:8px;
+width:100%;
+padding:8px;
+font-size:10px;
+cursor:pointer;
+}
+
+.close-shop{
+position:fixed;
+bottom:20px;
+left:50%;
+transform:translateX(-50%);
+padding:12px 35px;
+background:#f44;
+border:4px solid #fff;
+cursor:pointer;
+}
+</style>
+</head>
+
+<body>
+<canvas id="gameCanvas"></canvas>
+
+<div id="mainMenu" class="menu-screen">
+<div class="menu-title">RainWater</div>
+<button class="menu-button" onclick="startGame()">PLAY</button>
+</div>
+
+<div id="hud">
+<div>HP: <span id="hpDisplay">20</span></div>
+<div>TIME: <span id="timeDisplay">0:00</span></div>
+<div>KILLS: <span id="killsDisplay">0</span></div>
+</div>
+
+<div id="shopCorner" onclick="openShop()">💰 <span id="coinsCorner">0</span></div>
+
+<div id="upgradeShop">
+<div class="shop-header">UPGRADE SHOP</div>
+<div class="upgrades-container" id="upgradesGrid"></div>
+<button class="close-shop" onclick="closeShop()">CLOSE</button>
+</div>
+
+<script>
+/* ===== AUDIO FIX ===== */
+let audioCtx;
+function initAudio(){
+if(!audioCtx){
+audioCtx=new(window.AudioContext||window.webkitAudioContext)();
+}
+}
+document.addEventListener('mousedown',initAudio,{once:true});
+document.addEventListener('touchstart',initAudio,{once:true});
+
+/* ===== CANVAS ===== */
+const canvas=document.getElementById('gameCanvas');
+const ctx=canvas.getContext('2d');
+
+function resize(){
+canvas.width=innerWidth;
+canvas.height=innerHeight;
+}
+resize();
+addEventListener('resize',resize);
+
+/* ===== GAME STATE ===== */
+let gameRunning=false;
+let hp=20,maxHP=20,coins=0,kills=0,startTime=0;
+
+/* PLAYER */
+let mouseX=canvas.width/2;
+let mouseY=canvas.height/2;
+let shieldRadius=30;
+
+/* INPUT */
+function move(e){
+if(e.touches){
+mouseX=e.touches[0].clientX;
+mouseY=e.touches[0].clientY;
+}else{
+mouseX=e.clientX;
+mouseY=e.clientY;
+}
+}
+canvas.addEventListener('mousemove',move);
+canvas.addEventListener('touchmove',e=>{e.preventDefault();move(e)});
+
+/* RAIN */
+const rain=[];
+for(let i=0;i<200;i++)rain.push({active:false});
+
+function spawnRain(){
+if(Math.random()<0.02){
+const d=rain.find(r=>!r.active);
+if(d){
+d.x=Math.random()*canvas.width;
+d.y=80;
+d.active=true;
+}
+}
+}
+
+function updateRain(){
+for(const d of rain){
+if(!d.active)continue;
+d.y+=3;
+
+if(Math.hypot(d.x-mouseX,d.y-mouseY)<shieldRadius){
+coins+=5;
+kills++;
+d.active=false;
+}
+
+if(d.y>canvas.height-60){
+hp--;
+d.active=false;
+if(hp<=0)endGame();
+}
+}
+}
+
+/* DRAW */
+function draw(){
+ctx.clearRect(0,0,canvas.width,canvas.height);
+
+/* LINES */
+ctx.strokeStyle='#4af';
+ctx.lineWidth=3;
+ctx.beginPath();
+ctx.moveTo(0,80);
+ctx.lineTo(canvas.width,80);
+ctx.stroke();
+
+ctx.strokeStyle='#f44';
+ctx.beginPath();
+ctx.moveTo(0,canvas.height-60);
+ctx.lineTo(canvas.width,canvas.height-60);
+ctx.stroke();
+
+/* RAIN */
+ctx.fillStyle='#4af';
+for(const d of rain){
+if(d.active)ctx.fillRect(d.x-3,d.y-3,6,6);
+}
+
+/* SHIELD */
+ctx.strokeStyle='#4ff';
+ctx.beginPath();
+ctx.arc(mouseX,mouseY,shieldRadius,0,Math.PI*2);
+ctx.stroke();
+}
+
+/* LOOP */
+function loop(){
+if(gameRunning){
+spawnRain();
+updateRain();
+
+const t=Math.floor((Date.now()-startTime)/1000);
+document.getElementById('timeDisplay').textContent=
+Math.floor(t/60)+":"+String(t%60).padStart(2,"0");
+document.getElementById('hpDisplay').textContent=hp;
+document.getElementById('killsDisplay').textContent=kills;
+document.getElementById('coinsCorner').textContent=coins;
+}
+draw();
+requestAnimationFrame(loop);
+}
+loop();
+
+/* MENUS */
+function startGame(){
+document.getElementById('mainMenu').style.display='none';
+document.getElementById('hud').style.display='block';
+document.getElementById('shopCorner').style.display='block';
+hp=maxHP;
+coins=0;
+kills=0;
+startTime=Date.now();
+gameRunning=true;
+}
+
+function endGame(){
+gameRunning=false;
+alert("GAME OVER");
+location.reload();
+}
+
+/* SHOP */
+function openShop(){
+gameRunning=false;
+document.getElementById('upgradeShop').style.display='block';
+renderShop();
+}
+function closeShop(){
+document.getElementById('upgradeShop').style.display='none';
+gameRunning=true;
+}
+
+function renderShop(){
+document.getElementById('upgradesGrid').innerHTML=`
+<div class="upgrade-box expanded">
+<div>🛡 Shield</div>
+<div class="upgrade-details">
+<button class="buy-button" onclick="shieldRadius+=5">BUY</button>
+</div>
+</div>`;
+}
+</script>
+</body>
+</html>
