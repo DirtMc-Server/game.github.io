@@ -3,34 +3,74 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<title>Space Master — Difficulty & Golden Rocks</title>
+<title>Space Master — Enhanced Edition</title>
 <style>
 :root{
   --bg1:#020417; --bg2:#000006;
   --neon:#00f0ff; --accent:#8b5cff; --glass: rgba(255,255,255,0.04);
+  --gold:#ffd700; --danger:#ff4444;
 }
 *{box-sizing:border-box;font-family:Inter, "Segoe UI", Tahoma, Arial; color:#eafcff}
-html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg1),var(--bg2));-webkit-user-select:none;user-select:none}
+html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg1),var(--bg2));-webkit-user-select:none;user-select:none;overflow:hidden}
 canvas{display:block;position:fixed; inset:0; z-index:0;}
+
 /* UI */
 #topBar{position:fixed;left:12px;right:12px;top:10px;display:flex;justify-content:space-between;align-items:center;z-index:70;pointer-events:none}
-.title{font-weight:800;font-size:18px;pointer-events:auto}
+.title{font-weight:800;font-size:18px;pointer-events:auto;text-shadow:0 0 10px rgba(0,240,255,0.5)}
 .topBtns{pointer-events:auto;display:flex;gap:8px}
-.btn{padding:8px 12px;border-radius:10px;border:none;cursor:pointer;background:linear-gradient(90deg,var(--neon),var(--accent));color:#021;font-weight:800;box-shadow:0 8px 22px rgba(0,0,0,0.6)}
+.btn{padding:8px 12px;border-radius:10px;border:none;cursor:pointer;background:linear-gradient(90deg,var(--neon),var(--accent));color:#021;font-weight:800;box-shadow:0 8px 22px rgba(0,0,0,0.6);transition:transform 0.2s}
+.btn:hover{transform:scale(1.05)}
+.btn:active{transform:scale(0.95)}
+
 #bottomHUD{position:fixed;left:12px;right:12px;bottom:12px;z-index:70;display:flex;justify-content:space-between;gap:12px;padding:12px;border-radius:14px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.22));backdrop-filter: blur(6px);border:1px solid rgba(0,255,255,0.04);pointer-events:auto}
 .hudItem{display:flex;flex-direction:column;gap:4px}
 .hudLabel{font-size:12px;color:rgba(200,240,255,0.8)}
 .hudValue{font-weight:800;font-size:18px;color:var(--neon)}
+
+/* Survival Timer & Wave Counter */
+#survivalInfo{position:fixed;top:60px;left:50%;transform:translateX(-50%);z-index:70;text-align:center;pointer-events:none}
+#waveCounter{font-size:24px;font-weight:800;color:var(--gold);text-shadow:0 0 15px rgba(255,215,0,0.8)}
+#survivalTimer{font-size:14px;color:rgba(200,240,255,0.9);margin-top:4px}
+
+/* Boss Warning */
+#bossWarning{position:fixed;top:50%;left:50%;transform:translate(-50%, -50%);z-index:100;display:none;font-size:48px;font-weight:900;color:#ff4444;text-shadow:0 0 30px #ff0000;animation:pulse 0.5s infinite}
+@keyframes pulse{0%,100%{transform:translate(-50%,-50%) scale(1)}50%{transform:translate(-50%,-50%) scale(1.2)}}
+
+/* Power-up notification */
+#powerupNotif{position:fixed;top:120px;left:50%;transform:translateX(-50%);z-index:90;background:linear-gradient(90deg,#ffd700,#ff8c00);padding:10px 20px;border-radius:10px;display:none;font-weight:800;color:#000;box-shadow:0 0 20px rgba(255,215,0,0.8)}
+
 /* joystick */
 #joystick{position:fixed;left:50%;transform:translateX(-50%);bottom:120px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,0.03);display:none;z-index:80;border:1px solid rgba(255,255,255,0.04);pointer-events:auto;touch-action:none;}
 #stick{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:64px;height:64px;border-radius:50%;background:linear-gradient(180deg,#cfd,#909);box-shadow:0 10px 30px rgba(0,0,0,0.6)}
+
+/* Game Over Screen */
+#gameOver{position:fixed;inset:0;background:rgba(0,0,0,0.9);display:none;z-index:150;align-items:center;justify-content:center;flex-direction:column;gap:20px}
+#gameOver h1{font-size:48px;color:#ff4444;text-shadow:0 0 20px #ff0000}
+#gameOver .stats{background:rgba(255,255,255,0.05);padding:20px;border-radius:10px;border:1px solid rgba(0,255,255,0.1)}
+#gameOver .stat{margin:8px 0;font-size:18px}
+
 /* settings modal */
 #settingsModal{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;z-index:120;align-items:center;justify-content:center}
 .settingsCard{width:360px;background:linear-gradient(180deg, rgba(10,14,22,0.96), rgba(4,6,10,0.98));border-radius:12px;padding:14px;border:1px solid rgba(0,255,255,0.04)}
 .row{display:flex;align-items:center;justify-content:space-between;margin:10px 0}
 .select, input[type="range"]{width:100%}
 .small{font-size:13px;color:rgba(200,240,255,0.7)}
-.tooltip{position:fixed;z-index:9999;padding:8px 10px;background:rgba(2,6,20,0.9);border-radius:8px;border:1px solid rgba(0,255,255,0.06);display:none;pointer-events:none}
+
+#upgradeOverlay{display:none;z-index:110;position:fixed;inset:0;background:linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.9));align-items:center;justify-content:center}
+#upgradeOverlay > div{width:92%;max-width:1200px;height:86%;background:linear-gradient(180deg, rgba(8,12,20,0.9), rgba(2,4,8,0.98));border-radius:12px;padding:12px;display:flex;gap:12px;box-shadow:0 30px 80px rgba(0,0,0,0.6);border:1px solid rgba(0,255,255,0.04)}
+
+.tooltip{position:fixed;z-index:9999;padding:8px 10px;background:rgba(2,6,20,0.95);border-radius:8px;border:1px solid rgba(0,255,255,0.3);display:none;pointer-events:none;box-shadow:0 4px 12px rgba(0,0,0,0.5)}
+
+/* Tree Node Styles */
+.node{position:absolute;width:190px;padding:10px;border-radius:10px;background:linear-gradient(135deg, rgba(20,24,40,0.9), rgba(10,12,20,0.95));border:2px solid rgba(100,100,120,0.3);cursor:pointer;transition:all 0.3s}
+.node.unlocked{border-color:rgba(0,240,255,0.5)}
+.node.buyable{border-color:var(--gold);box-shadow:0 0 15px rgba(255,215,0,0.4)}
+.node.locked{opacity:0.5;cursor:not-allowed}
+.node:hover:not(.locked){transform:scale(1.05);box-shadow:0 8px 20px rgba(0,240,255,0.3)}
+.node .lvl{font-size:11px;color:rgba(200,240,255,0.7);margin-bottom:4px}
+.node .title{font-weight:800;font-size:14px;margin-bottom:4px}
+.node .sub{font-size:11px;color:rgba(180,200,220,0.8);margin-bottom:6px}
+.node .cost{font-size:13px;font-weight:700;color:var(--gold)}
 </style>
 </head>
 <body>
@@ -39,7 +79,7 @@ canvas{display:block;position:fixed; inset:0; z-index:0;}
 <canvas id="game"></canvas>
 
 <div id="topBar">
-  <div class="title">🚀 Space Master — Updated</div>
+  <div class="title">🚀 Space Master — Enhanced</div>
   <div class="topBtns">
     <button id="openTree" class="btn">🌳 شجرة التطوير</button>
     <button id="openSettings" class="btn">⚙️ Settings</button>
@@ -47,14 +87,36 @@ canvas{display:block;position:fixed; inset:0; z-index:0;}
   </div>
 </div>
 
+<div id="survivalInfo">
+  <div id="waveCounter">Wave 1</div>
+  <div id="survivalTimer">00:00</div>
+</div>
+
+<div id="bossWarning">⚠️ BOSS INCOMING ⚠️</div>
+<div id="powerupNotif"></div>
+
 <div id="bottomHUD">
   <div class="hudItem"><div class="hudLabel">❤ الصحة</div><div class="hudValue" id="hpVal">20</div></div>
   <div class="hudItem"><div class="hudLabel">💰 الفلوس</div><div class="hudValue" id="moneyVal">0</div></div>
   <div class="hudItem"><div class="hudLabel">⭐ النقاط</div><div class="hudValue" id="scoreVal">0</div></div>
   <div class="hudItem"><div class="hudLabel">⚔️ ضرر</div><div class="hudValue" id="dmgVal">3</div></div>
+  <div class="hudItem"><div class="hudLabel">🎯 أعلى نقاط</div><div class="hudValue" id="highScoreVal">0</div></div>
 </div>
 
 <div id="joystick"><div id="stick"></div></div>
+
+<!-- Game Over Screen -->
+<div id="gameOver">
+  <h1>💀 GAME OVER 💀</h1>
+  <div class="stats">
+    <div class="stat">⭐ النقاط النهائية: <span id="finalScore">0</span></div>
+    <div class="stat">🎯 أعلى نقاط: <span id="finalHighScore">0</span></div>
+    <div class="stat">⏱️ زمن البقاء: <span id="finalTime">0</span></div>
+    <div class="stat">🌊 الموجة: <span id="finalWave">0</span></div>
+    <div class="stat">💰 فلوس مكتسبة: <span id="finalMoney">0</span></div>
+  </div>
+  <button id="respawnBtn" class="btn" style="padding:15px 30px;font-size:18px">🔄 العودة للحياة</button>
+</div>
 
 <!-- settings modal -->
 <div id="settingsModal">
@@ -87,10 +149,10 @@ canvas{display:block;position:fixed; inset:0; z-index:0;}
   </div>
 </div>
 
-<div id="upgradeOverlay" style="display:none;z-index:110;position:fixed;inset:0;background:linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.9));align-items:center;justify-content:center">
-  <div style="width:92%;max-width:1200px;height:86%;background:linear-gradient(180deg, rgba(8,12,20,0.9), rgba(2,4,8,0.98));border-radius:12px;padding:12px;display:flex;gap:12px;box-shadow:0 30px 80px rgba(0,0,0,0.6);border:1px solid rgba(0,255,255,0.04)">
+<div id="upgradeOverlay">
+  <div>
     <div style="width:320px;display:flex;flex-direction:column;gap:12px">
-      <div style="font-weight:800">شجرة المهارات</div>
+      <div style="font-weight:800;font-size:20px">شجرة المهارات</div>
       <div style="font-size:13px;color:rgba(200,240,255,0.7)">اشترِ لفتح فروع جديدة — اسحب الشجرة لتحريكها</div>
       <div style="display:flex;gap:8px;margin-top:auto">
         <button id="closeTreeBtn" class="btn">رجوع</button>
@@ -98,7 +160,7 @@ canvas{display:block;position:fixed; inset:0; z-index:0;}
       </div>
     </div>
 
-    <div style="flex:1;position:relative;border-radius:8px;background:radial-gradient(ellipse at 30% 10%, rgba(0,255,220,0.02), transparent 6%), radial-gradient(ellipse at 80% 90%, rgba(139,92,255,0.012), transparent 6%)">
+    <div style="flex:1;position:relative;border-radius:8px;background:radial-gradient(ellipse at 30% 10%, rgba(0,255,220,0.02), transparent 60%), radial-gradient(ellipse at 80% 90%, rgba(139,92,255,0.012), transparent 60%);overflow:hidden">
       <div id="treeArea" style="position:absolute;left:0;top:0;width:2200px;height:1600px;cursor:grab"></div>
     </div>
   </div>
@@ -114,65 +176,305 @@ function resize(){ bg.width = game.width = innerWidth; bg.height = game.height =
 addEventListener('resize', resize); resize();
 
 /* --------------------------- audio (fx manager) --------------------------- */
-const AudioCtx = window.AudioContext ? new AudioContext() : null;
+const AudioCtx = window.AudioContext || window.webkitAudioContext ? new (window.AudioContext || window.webkitAudioContext)() : null;
 let masterGain = null;
-if(AudioCtx){ masterGain = AudioCtx.createGain(); masterGain.gain.value = 0.6; masterGain.connect(AudioCtx.destination); }
+if(AudioCtx){ 
+  masterGain = AudioCtx.createGain(); 
+  masterGain.gain.value = 0.6; 
+  masterGain.connect(AudioCtx.destination); 
+}
 function setVolume(v){ if(masterGain) masterGain.gain.value = v; }
 
-/* a single playFX implementation used across script */
 function playFX(name){
   if(!AudioCtx) return;
-  // check settings
-  if(!state.settings || state.settings.fx === false) return;
+  if(!gameState.settings || gameState.settings.fx === false) return;
   const now = AudioCtx.currentTime;
+  
   if(name === 'fire'){
     const o = AudioCtx.createOscillator(); const g = AudioCtx.createGain();
     o.type = 'sawtooth'; o.frequency.value = 800 + Math.random()*120; g.gain.value = 0.03;
     o.connect(g); g.connect(masterGain); o.start(now); o.stop(now + 0.055);
   } else if(name === 'hit'){
     const o = AudioCtx.createOscillator(); const g = AudioCtx.createGain();
-    o.type='triangle'; o.frequency.value = 340 + Math.random()*80; g.gain.value = 0.04; o.connect(g); g.connect(masterGain); o.start(now); o.stop(now + 0.07);
+    o.type='triangle'; o.frequency.value = 340 + Math.random()*80; g.gain.value = 0.04; 
+    o.connect(g); g.connect(masterGain); o.start(now); o.stop(now + 0.07);
   } else if(name === 'destroy'){
-    for(let i=0;i<3;i++){ const o = AudioCtx.createOscillator(); const g = AudioCtx.createGain(); o.type='sine'; o.frequency.value = 220 + i*60; g.gain.value = 0.02; o.connect(g); g.connect(masterGain); o.start(now + i*0.01); o.stop(now + 0.12 + i*0.02); }
+    for(let i=0;i<3;i++){ 
+      const o = AudioCtx.createOscillator(); const g = AudioCtx.createGain(); 
+      o.type='sine'; o.frequency.value = 220 + i*60; g.gain.value = 0.02; 
+      o.connect(g); g.connect(masterGain); o.start(now + i*0.01); o.stop(now + 0.12 + i*0.02); 
+    }
   } else if(name === 'upgrade'){
-    const o = AudioCtx.createOscillator(); const g = AudioCtx.createGain(); o.type='triangle'; o.frequency.value = 1200; g.gain.value = 0.03; o.connect(g); g.connect(masterGain); o.start(now); o.stop(now + 0.12);
+    const o = AudioCtx.createOscillator(); const g = AudioCtx.createGain(); 
+    o.type='triangle'; o.frequency.value = 1200; g.gain.value = 0.03; 
+    o.connect(g); g.connect(masterGain); o.start(now); o.stop(now + 0.12);
   } else if(name === 'spawn'){
-    const o = AudioCtx.createOscillator(); const g = AudioCtx.createGain(); o.type='sine'; o.frequency.value = 300; g.gain.value = 0.01; o.connect(g); g.connect(masterGain); o.start(now); o.stop(now + 0.06);
+    const o = AudioCtx.createOscillator(); const g = AudioCtx.createGain(); 
+    o.type='sine'; o.frequency.value = 300; g.gain.value = 0.01; 
+    o.connect(g); g.connect(masterGain); o.start(now); o.stop(now + 0.06);
   } else if(name === 'death'){
-    const o = AudioCtx.createOscillator(); const g = AudioCtx.createGain(); o.type='sawtooth'; o.frequency.value = 120; g.gain.value = 0.06; o.connect(g); g.connect(masterGain); o.start(now); o.stop(now + 0.28);
+    const o = AudioCtx.createOscillator(); const g = AudioCtx.createGain(); 
+    o.type='sawtooth'; o.frequency.value = 120; g.gain.value = 0.06; 
+    o.connect(g); g.connect(masterGain); o.start(now); o.stop(now + 0.28);
+  } else if(name === 'powerup'){
+    const o = AudioCtx.createOscillator(); const g = AudioCtx.createGain();
+    o.type = 'sine'; o.frequency.setValueAtTime(400, now); o.frequency.exponentialRampToValueAtTime(800, now + 0.2);
+    g.gain.value = 0.05; o.connect(g); g.connect(masterGain); o.start(now); o.stop(now + 0.2);
+  } else if(name === 'boss'){
+    for(let i=0;i<5;i++){
+      const o = AudioCtx.createOscillator(); const g = AudioCtx.createGain();
+      o.type = 'sawtooth'; o.frequency.value = 100 - i*10; g.gain.value = 0.02;
+      o.connect(g); g.connect(masterGain); o.start(now + i*0.05); o.stop(now + 0.4 + i*0.05);
+    }
   }
 }
 
 /* --------------------------- persistent state --------------------------- */
-const SAVE = 'space_master_settings_v2';
-let state = { money:0, score:0, upgrades:{}, settings:{ mode:'pc', volume:0.6, fx:true } };
-try{ const s = localStorage.getItem(SAVE); if(s) state = JSON.parse(s); }catch(e){}
-setVolume(state.settings.volume || 0.6);
+const SAVE = 'space_master_enhanced_v1';
+let gameState = { 
+  money:0, 
+  score:0, 
+  highScore:0,
+  upgrades:{}, 
+  settings:{ mode:'pc', volume:0.6, fx:true } 
+};
+
+try{ 
+  const s = localStorage.getItem(SAVE); 
+  if(s) {
+    const loaded = JSON.parse(s);
+    gameState = {...gameState, ...loaded};
+  }
+}catch(e){console.error('Load error:', e)}
+
+setVolume(gameState.settings.volume || 0.6);
 
 /* --------------------------- core objects & defaults --------------------------- */
-let mode = state.settings.mode || 'pc'; // default PC
+let mode = gameState.settings.mode || 'pc';
 const joystick = document.getElementById('joystick'), stick = document.getElementById('stick');
 if(mode === 'mobile') joystick.style.display = 'block'; else joystick.style.display = 'none';
 
-const player = { x: innerWidth/2, y: innerHeight/2, r:20, health:20, maxHealth:20, damage:3, fireRate:1800, missiles:1, missileSpeed:6, speed:3, shield:0, regen:0 };
+const player = { 
+  x: innerWidth/2, 
+  y: innerHeight/2, 
+  r:20, 
+  health:20, 
+  maxHealth:20, 
+  damage:3, 
+  fireRate:1800, 
+  missiles:1, 
+  missileSpeed:6, 
+  speed:3, 
+  shield:0,
+  maxShield:0,
+  regen:0,
+  explosion:0,
+  homing:0,
+  split:0,
+  moneyMul:1,
+  crit:0,
+  invulnerable:0
+};
 
-let rocks = [], missiles = [], particles = [];
+let rocks = [], missiles = [], particles = [], powerups = [], bosses = [];
 
 /* ----- DIFFICULTY + SURVIVAL TRACKING ----- */
-let startSurvival = performance.now(); // time since last death/spawn reset
+let startSurvival = performance.now();
 let difficultyTimer = performance.now();
 let difficultyLevel = 0;
-let goldenChance = 0.01; // base chance for golden rock spawn (1%)
-const DIFF_INCREASE_INTERVAL = 20000; // every 20s increase difficulty
-const MAX_GOLDEN_CHANCE = 0.18; // max 18%
+let currentWave = 1;
+let goldenChance = 0.01;
+const DIFF_INCREASE_INTERVAL = 20000;
+const MAX_GOLDEN_CHANCE = 0.18;
+const BOSS_WAVE_INTERVAL = 5;
 
 /* ----- spawn config ----- */
 const spawnConfig = {
   baseSpawnInterval: 1200,
   spawnInterval: 1200,
   minSpawnInterval: 350,
-  baseRockSpeed: 0.45, // lowered base speed a bit (we slowed rocks)
+  baseRockSpeed: 0.6,
 };
+
+/* --------------------------- POWER-UPS --------------------------- */
+const POWERUP_TYPES = {
+  health: { color: '#ff6b9d', icon: '❤️', duration: 0, effect: 'heal' },
+  shield: { color: '#6bc8ff', icon: '🛡️', duration: 8000, effect: 'shield' },
+  rapidFire: { color: '#ffeb3b', icon: '⚡', duration: 10000, effect: 'rapidfire' },
+  multiShot: { color: '#9c27b0', icon: '✨', duration: 8000, effect: 'multishot' },
+  invincible: { color: '#ffd700', icon: '⭐', duration: 5000, effect: 'invincible' }
+};
+
+function spawnPowerup(x, y){
+  const types = Object.keys(POWERUP_TYPES);
+  const type = types[Math.floor(Math.random() * types.length)];
+  powerups.push({ x, y, type, r: 12, life: 300 });
+}
+
+function collectPowerup(p){
+  const type = POWERUP_TYPES[p.type];
+  showNotification(`${type.icon} Power-up Collected!`);
+  playFX('powerup');
+  
+  if(p.type === 'health'){
+    player.health = Math.min(player.maxHealth, player.health + 10);
+  } else if(p.type === 'shield'){
+    player.shield = Math.min(player.maxShield || 20, (player.shield || 0) + 15);
+  } else if(p.type === 'rapidFire'){
+    player.powerupFireRate = performance.now() + type.duration;
+  } else if(p.type === 'multiShot'){
+    player.powerupMultiShot = performance.now() + type.duration;
+  } else if(p.type === 'invincible'){
+    player.invulnerable = performance.now() + type.duration;
+  }
+}
+
+function showNotification(text){
+  const notif = document.getElementById('powerupNotif');
+  notif.textContent = text;
+  notif.style.display = 'block';
+  setTimeout(() => notif.style.display = 'none', 2000);
+}
+
+/* --------------------------- BOSS SYSTEM --------------------------- */
+function spawnBoss(){
+  const bossWarning = document.getElementById('bossWarning');
+  bossWarning.style.display = 'block';
+  playFX('boss');
+  
+  setTimeout(() => {
+    bossWarning.style.display = 'none';
+    const r = 80;
+    const x = innerWidth / 2;
+    const y = -r - 50;
+    
+    bosses.push({
+      x, y, r, 
+      hp: 200 + currentWave * 100,
+      maxHp: 200 + currentWave * 100,
+      vx: 0,
+      vy: 0.3,
+      pattern: 0,
+      patternTimer: 0,
+      fireTimer: 0,
+      value: 500 + currentWave * 200
+    });
+  }, 2000);
+}
+
+function updateBoss(boss, dt, now){
+  // Boss movement patterns
+  boss.patternTimer += dt;
+  
+  if(boss.patternTimer > 5000){
+    boss.pattern = (boss.pattern + 1) % 3;
+    boss.patternTimer = 0;
+  }
+  
+  if(boss.pattern === 0){
+    // Horizontal sweep
+    boss.vy = 0.5;
+    boss.vx = Math.sin(now * 0.001) * 2;
+  } else if(boss.pattern === 1){
+    // Circle player
+    const dx = player.x - boss.x;
+    const dy = player.y - boss.y;
+    const angle = Math.atan2(dy, dx);
+    boss.vx = Math.cos(angle + Math.PI/2) * 1.5;
+    boss.vy = Math.sin(angle + Math.PI/2) * 1.5;
+  } else {
+    // Diagonal swoops
+    boss.vx = Math.cos(now * 0.002) * 2.5;
+    boss.vy = Math.sin(now * 0.001) * 1.5;
+  }
+  
+  boss.x += boss.vx * (dt/16);
+  boss.y += boss.vy * (dt/16);
+  
+  // Keep in bounds
+  boss.x = Math.max(boss.r, Math.min(innerWidth - boss.r, boss.x));
+  boss.y = Math.max(boss.r, Math.min(innerHeight/2, boss.y));
+  
+  // Boss fires rocks at player
+  boss.fireTimer += dt;
+  if(boss.fireTimer > 800){
+    boss.fireTimer = 0;
+    const angle = Math.atan2(player.y - boss.y, player.x - boss.x);
+    const spread = 0.3;
+    for(let i = -1; i <= 1; i++){
+      const a = angle + i * spread;
+      const speed = 2;
+      rocks.push({
+        x: boss.x + Math.cos(a) * boss.r,
+        y: boss.y + Math.sin(a) * boss.r,
+        r: 15,
+        hp: 30,
+        vx: Math.cos(a) * speed,
+        vy: Math.sin(a) * speed,
+        baseSpeed: speed,
+        value: 20,
+        golden: false,
+        fromBoss: true
+      });
+    }
+    playFX('spawn');
+  }
+  
+  // Check collision with player
+  const dist = Math.hypot(boss.x - player.x, boss.y - player.y);
+  if(dist < boss.r + player.r){
+    let dmg = 5;
+    if(player.invulnerable && performance.now() < player.invulnerable){
+      dmg = 0;
+    } else if(player.shield && player.shield > 0){
+      const take = Math.min(player.shield, dmg);
+      player.shield -= take;
+      dmg -= take;
+    }
+    player.health -= dmg;
+    
+    // Push player away
+    const pushAngle = Math.atan2(player.y - boss.y, player.x - boss.x);
+    player.x += Math.cos(pushAngle) * 20;
+    player.y += Math.sin(pushAngle) * 20;
+    
+    if(dmg > 0) playFX('hit');
+  }
+}
+
+function destroyBoss(i){
+  const boss = bosses[i];
+  if(!boss) return;
+  
+  const reward = Math.ceil(boss.value * (player.moneyMul || 1));
+  gameState.money = (gameState.money || 0) + reward;
+  gameState.score = (gameState.score || 0) + 500;
+  
+  // Epic explosion
+  for(let p=0;p<100;p++){
+    particles.push({
+      x: boss.x,
+      y: boss.y,
+      vx: (Math.random()-0.5)*12,
+      vy: (Math.random()-0.5)*12,
+      life: 60,
+      col: ['#ff6b6b', '#ffd700', '#00f0ff', '#8b5cff'][Math.floor(Math.random()*4)]
+    });
+  }
+  
+  // Spawn power-ups
+  for(let k=0;k<5;k++){
+    spawnPowerup(
+      boss.x + (Math.random()-0.5)*100,
+      boss.y + (Math.random()-0.5)*100
+    );
+  }
+  
+  bosses.splice(i, 1);
+  playFX('destroy');
+  showNotification('🎉 BOSS DEFEATED! +500 SCORE');
+  saveState();
+}
 
 /* spawn rock with random velocity; can be golden */
 function spawnRock(edge){
@@ -184,17 +486,32 @@ function spawnRock(edge){
   else if(side===1){ x = innerWidth + r+10; y = Math.random()*innerHeight; }
   else if(side===2){ x = Math.random()*innerWidth; y = -r-10; }
   else { x = Math.random()*innerWidth; y = innerHeight + r + 10; }
-  // random direction velocity
+  
   const angle = Math.random() * Math.PI * 2;
-  const speed = spawnConfig.baseRockSpeed + Math.random()*0.6; // base + small random
+  const speed = spawnConfig.baseRockSpeed + Math.random()*0.6;
   const vx = Math.cos(angle) * speed;
   const vy = Math.sin(angle) * speed;
   const baseHP = Math.ceil(r/3)*6;
   const baseValue = Math.ceil(r/3)*6;
+  
   if(isGolden){
-    rocks.push({ x, y, r: r*1.05, hp: Math.ceil(baseHP*1.9), vx, vy, baseSpeed: speed, value: Math.ceil(baseValue*3), golden:true });
+    rocks.push({ 
+      x, y, r: r*1.05, 
+      hp: Math.ceil(baseHP*1.9), 
+      vx, vy, 
+      baseSpeed: speed, 
+      value: Math.ceil(baseValue*3), 
+      golden:true 
+    });
   } else {
-    rocks.push({ x, y, r, hp: baseHP, vx, vy, baseSpeed: speed, value: baseValue, golden:false });
+    rocks.push({ 
+      x, y, r, 
+      hp: baseHP, 
+      vx, vy, 
+      baseSpeed: speed, 
+      value: baseValue, 
+      golden:false 
+    });
   }
   playFX('spawn');
 }
@@ -202,108 +519,271 @@ function spawnRock(edge){
 /* spawn initial */
 for(let i=0;i<8;i++) spawnRock();
 
-/* --------------------------- upgrades (same defs) --------------------------- */
+/* --------------------------- upgrades --------------------------- */
 const UP = {
-  damage: {name:'جذر: ضرر', desc:'يزيد ضرر الصواريخ', cost:60, max:6, deps:[], apply:lvl=> player.damage = 3 + lvl*2},
-  fireRate: {name:'جذر: سرعة اطلاق', desc:'يقلل زمن الإطلاق', cost:80, max:6, deps:['damage'], apply:lvl=> player.fireRate = Math.max(250, 1800 - lvl*220)},
-  missiles: {name:'جذر: صواريخ', desc:'زيادة عدد الصواريخ', cost:90, max:5, deps:['damage'], apply:lvl=> player.missiles = 1 + lvl},
-  missileSpeed: {name:'سرعة الصواريخ', desc:'تزيد سرعة الصواريخ', cost:80, max:5, deps:['missiles'], apply:lvl=> player.missileSpeed = 6 + lvl*2},
-  explosion: {name:'انفجار', desc:'صواريخ تسبب انفجار صغير', cost:140, max:3, deps:['missileSpeed'], apply:lvl=> player.explosion = lvl},
-  money: {name:'ذهب', desc:'زيادة مكافآت التدمير', cost:120, max:5, deps:['missiles'], apply:lvl=> player.moneyMul = 1 + lvl*0.18},
-  hpMax: {name:'قلب اقوى', desc:'زيادة الحد الأقصى للصحة', cost:120, max:5, deps:['fireRate'], apply:lvl=> { player.maxHealth = 20 + lvl*6; if(player.health>player.maxHealth) player.health = player.maxHealth } },
-  regen: {name:'تجدد', desc:'استرجاع صحة بمرور الوقت', cost:160, max:3, deps:['hpMax'], apply:lvl=> player.regen = lvl},
-  rockDensity: {name:'زخم الصخور', desc:'يزيد معدل الظهور', cost:110, max:5, deps:['fireRate'], apply:lvl=> spawnConfig.spawnInterval = Math.max(spawnConfig.minSpawnInterval, spawnConfig.baseSpawnInterval - lvl*100)},
-  rockSpeed: {name:'سرعة الصخور', desc:'يزيد سرعة الصخور', cost:110, max:5, deps:['rockDensity'], apply:lvl=> spawnConfig.baseRockSpeed = 0.45 + lvl*0.12},
-  homing: {name:'تتبع', desc:'تحسن تتبع الصواريخ', cost:130, max:3, deps:['missiles'], apply:lvl=> player.homing = lvl},
-  shield: {name:'درع', desc:'درع يمتص ضرر مؤقت', cost:190, max:3, deps:['hpMax'], apply:lvl=> player.shieldMax = lvl*8},
-  split: {name:'تشظي', desc:'تصنع شظايا عند الاصابة', cost:170, max:3, deps:['explosion'], apply:lvl=> player.split = lvl},
-  speed: {name:'سرعة', desc:'تزيد سرعة الحركة', cost:100, max:4, deps:[], apply:lvl=> player.speed = 3 + lvl*1.0}
+  damage: {name:'جذر: ضرر', desc:'يزيد ضرر الصواريخ +2', cost:60, max:8, deps:[], apply:lvl=> player.damage = 3 + lvl*2},
+  fireRate: {name:'جذر: سرعة اطلاق', desc:'يقلل زمن الإطلاق', cost:80, max:8, deps:['damage'], apply:lvl=> player.fireRate = Math.max(200, 1800 - lvl*200)},
+  missiles: {name:'جذر: صواريخ', desc:'زيادة عدد الصواريخ +1', cost:90, max:6, deps:['damage'], apply:lvl=> player.missiles = 1 + lvl},
+  missileSpeed: {name:'سرعة الصواريخ', desc:'تزيد سرعة الصواريخ +2', cost:80, max:6, deps:['missiles'], apply:lvl=> player.missileSpeed = 6 + lvl*2},
+  explosion: {name:'انفجار', desc:'صواريخ تسبب انفجار AoE', cost:140, max:4, deps:['missileSpeed'], apply:lvl=> player.explosion = lvl},
+  money: {name:'ذهب', desc:'زيادة مكافآت التدمير +18%', cost:120, max:6, deps:['missiles'], apply:lvl=> player.moneyMul = 1 + lvl*0.18},
+  hpMax: {name:'قلب اقوى', desc:'زيادة الصحة القصوى +8', cost:120, max:6, deps:['fireRate'], apply:lvl=> { player.maxHealth = 20 + lvl*8; if(player.health>player.maxHealth) player.health = player.maxHealth }},
+  regen: {name:'تجدد', desc:'استرجاع صحة بمرور الوقت', cost:160, max:4, deps:['hpMax'], apply:lvl=> player.regen = lvl},
+  rockDensity: {name:'زخم الصخور', desc:'يزيد معدل الظهور', cost:110, max:6, deps:['fireRate'], apply:lvl=> spawnConfig.spawnInterval = Math.max(spawnConfig.minSpawnInterval, spawnConfig.baseSpawnInterval - lvl*100)},
+  rockSpeed: {name:'سرعة الصخور', desc:'يزيد سرعة الصخور', cost:110, max:6, deps:['rockDensity'], apply:lvl=> spawnConfig.baseRockSpeed = 0.6 + lvl*0.12},
+  homing: {name:'تتبع', desc:'تحسن تتبع الصواريخ', cost:130, max:4, deps:['missiles'], apply:lvl=> player.homing = lvl},
+  shield: {name:'درع', desc:'درع يمتص ضرر +10', cost:190, max:4, deps:['hpMax'], apply:lvl=> player.maxShield = lvl*10},
+  split: {name:'تشظي', desc:'شظايا عند الاصابة', cost:170, max:4, deps:['explosion'], apply:lvl=> player.split = lvl},
+  speed: {name:'سرعة', desc:'تزيد سرعة الحركة +1', cost:100, max:5, deps:[], apply:lvl=> player.speed = 3 + lvl*1.0},
+  crit: {name:'ضربة حرجة', desc:'فرصة ضرر مضاعف', cost:200, max:3, deps:['damage'], apply:lvl=> player.crit = lvl*0.12}
 };
-if(!state.upgrades) state.upgrades = {};
-for(const k in UP) if(state.upgrades[k]===undefined) state.upgrades[k] = 0;
+
+if(!gameState.upgrades) gameState.upgrades = {};
+for(const k in UP) if(gameState.upgrades[k]===undefined) gameState.upgrades[k] = 0;
+
 function applyAllUpgrades(){
-  player.damage = 3; player.fireRate = 1800; player.missiles = 1; player.missileSpeed = 6; player.moneyMul = 1; player.regen = 0; player.shieldMax = 0; player.explosion = 0; player.homing=0; player.split=0; player.speed=3; player.maxHealth=20;
-  for(const id in UP){ const lvl = state.upgrades[id]||0; if(typeof UP[id].apply === 'function') UP[id].apply(lvl); }
-  if(!player.health) player.health = player.maxHealth;
+  player.damage = 3; 
+  player.fireRate = 1800; 
+  player.missiles = 1; 
+  player.missileSpeed = 6; 
+  player.moneyMul = 1; 
+  player.regen = 0; 
+  player.maxShield = 0; 
+  player.explosion = 0; 
+  player.homing=0; 
+  player.split=0; 
+  player.speed=3; 
+  player.maxHealth=20;
+  player.crit=0;
+  
+  for(const id in UP){ 
+    const lvl = gameState.upgrades[id]||0; 
+    if(typeof UP[id].apply === 'function') UP[id].apply(lvl); 
+  }
+  
+  if(!player.health || player.health <= 0) player.health = player.maxHealth;
 }
 applyAllUpgrades();
 
 /* --------------------------- inputs & joystick --------------------------- */
 let mouse = {x:player.x, y:player.y};
-addEventListener('mousemove', e=>{ if(mode==='pc'){ mouse.x = e.clientX; mouse.y = e.clientY; }});
+addEventListener('mousemove', e=>{ 
+  if(mode==='pc'){ 
+    mouse.x = e.clientX; 
+    mouse.y = e.clientY; 
+  }
+});
+
 let stickPos = {x:0,y:0};
 let activeTouchId = null;
-game.addEventListener('touchstart', ev=>{ if(mode!=='mobile') return; const t = ev.touches[0]; activeTouchId = t.identifier; });
-game.addEventListener('touchmove', ev=>{ if(mode!=='mobile') return; for(const t of ev.touches){ if(t.identifier === activeTouchId){ const dx = t.clientX - innerWidth/2; const dy = t.clientY - (innerHeight - 120); const max = 60; const mag = Math.hypot(dx,dy); const clx = (mag>max)? dx*max/mag : dx; const cly = (mag>max)? dy*max/mag : dy; stick.style.transform = `translate(${clx}px, ${cly}px)`; stickPos = {x:clx/max, y:cly/max}; } }});
-game.addEventListener('touchend', ev=>{ activeTouchId=null; stick.style.transform='translate(0,0)'; stickPos={x:0,y:0}; });
 
-const keys = {}; addEventListener('keydown', e=>{ keys[e.key.toLowerCase()]=true; if(e.key.toLowerCase()==='u') toggleTree(); });
+joystick.addEventListener('touchstart', ev=>{
+  if(mode!=='mobile') return;
+  const t = ev.touches[0];
+  activeTouchId = t.identifier;
+});
+
+joystick.addEventListener('touchmove', ev=>{
+  if(mode!=='mobile') return;
+  ev.preventDefault();
+  for(const t of ev.touches){
+    if(t.identifier === activeTouchId){
+      const rect = joystick.getBoundingClientRect();
+      const centerX = rect.left + rect.width/2;
+      const centerY = rect.top + rect.height/2;
+      const dx = t.clientX - centerX;
+      const dy = t.clientY - centerY;
+      const max = 60;
+      const mag = Math.hypot(dx,dy);
+      const clx = (mag>max)? dx*max/mag : dx;
+      const cly = (mag>max)? dy*max/mag : dy;
+      stick.style.transform = `translate(${clx}px, ${cly}px)`;
+      stickPos = {x:clx/max, y:cly/max};
+    }
+  }
+});
+
+joystick.addEventListener('touchend', ev=>{
+  activeTouchId=null;
+  stick.style.transform='translate(0,0)';
+  stickPos={x:0,y:0};
+});
+
+const keys = {};
+addEventListener('keydown', e=>{
+  keys[e.key.toLowerCase()]=true;
+  if(e.key.toLowerCase()==='u') toggleTree();
+});
 addEventListener('keyup', e=> keys[e.key.toLowerCase()] = false);
 
 /* --------------------------- firing & destroy --------------------------- */
 function autoFire(now){
-  if(now - game.lastFire < (player.fireRate || 1800)) return;
-  game.lastFire = now;
-  const count = player.missiles || 1;
+  let fireRate = player.fireRate;
+  if(player.powerupFireRate && now < player.powerupFireRate){
+    fireRate = fireRate * 0.3; // 70% faster
+  }
+  
+  if(now - gameLoop.lastFire < fireRate) return;
+  gameLoop.lastFire = now;
+  
+  let count = player.missiles || 1;
+  if(player.powerupMultiShot && now < player.powerupMultiShot){
+    count = count * 2;
+  }
+  
   for(let i=0;i<count;i++){
-    if(rocks.length===0) return;
-    let target = rocks.reduce((a,b)=> (Math.hypot(a.x-player.x,a.y-player.y) < Math.hypot(b.x-player.x,b.y-player.y) ? a : b));
-    if(Math.random() < 0.18 && rocks.length>2) target = rocks[Math.floor(Math.random()*rocks.length)];
-    const angle = Math.atan2((target.y-player.y)+(Math.random()-0.5)*30, (target.x-player.x)+(Math.random()-0.5)*30);
-    const vx = Math.cos(angle)*(player.missileSpeed||6), vy = Math.sin(angle)*(player.missileSpeed||6);
-    missiles.push({ x:player.x + Math.cos(angle)*player.r, y:player.y + Math.sin(angle)*player.r, vx, vy, target });
+    if(rocks.length===0 && bosses.length === 0) return;
+    
+    let targets = [...rocks, ...bosses];
+    let target = targets.reduce((a,b)=> {
+      const distA = Math.hypot(a.x-player.x, a.y-player.y);
+      const distB = Math.hypot(b.x-player.x, b.y-player.y);
+      return distA < distB ? a : b;
+    });
+    
+    if(Math.random() < 0.18 && targets.length > 2){
+      target = targets[Math.floor(Math.random()*targets.length)];
+    }
+    
+    const angle = Math.atan2(
+      (target.y-player.y)+(Math.random()-0.5)*30, 
+      (target.x-player.x)+(Math.random()-0.5)*30
+    );
+    const vx = Math.cos(angle)*(player.missileSpeed||6);
+    const vy = Math.sin(angle)*(player.missileSpeed||6);
+    
+    missiles.push({ 
+      x:player.x + Math.cos(angle)*player.r, 
+      y:player.y + Math.sin(angle)*player.r, 
+      vx, vy, 
+      target 
+    });
   }
   playFX('fire');
 }
 
 function destroyRock(i){
-  const r = rocks[i]; if(!r) return;
+  const r = rocks[i];
+  if(!r) return;
+  
   const reward = Math.ceil(r.value * (player.moneyMul || 1));
-  state.money = (state.money || 0) + reward; state.score = (state.score || 0) + Math.ceil(r.r/2);
-  for(let p=0;p<18;p++) particles.push({x:r.x,y:r.y,vx:(Math.random()-0.5)*6,vy:(Math.random()-0.5)*6,life:24,col:'#ffd4a3'});
-  if(!r.golden && r.r > 22){
-    const parts = Math.min(3, Math.floor(r.r/14));
-    for(let k=0;k<parts;k++) rocks.push({ x: r.x + (Math.random()-0.5)*20, y: r.y + (Math.random()-0.5)*20, r: r.r*(0.45+Math.random()*0.2), hp: Math.ceil(r.r*0.5), vx:(Math.random()*1-0.5)*1.2, vy:(Math.random()*1-0.5)*1.2, baseSpeed: 0.3 + Math.random()*0.6, value: Math.ceil(r.r*0.4/3)*6, golden:false });
+  gameState.money = (gameState.money || 0) + reward;
+  gameState.score = (gameState.score || 0) + Math.ceil(r.r/2);
+  
+  // Update high score
+  if(gameState.score > gameState.highScore){
+    gameState.highScore = gameState.score;
   }
+  
+  for(let p=0;p<18;p++){
+    particles.push({
+      x:r.x,
+      y:r.y,
+      vx:(Math.random()-0.5)*6,
+      vy:(Math.random()-0.5)*6,
+      life:24,
+      col: r.golden ? '#ffd700' : '#ffd4a3'
+    });
+  }
+  
+  // Chance to spawn power-up
+  if(Math.random() < 0.08){
+    spawnPowerup(r.x, r.y);
+  }
+  
+  if(!r.golden && !r.fromBoss && r.r > 22){
+    const parts = Math.min(3, Math.floor(r.r/14));
+    for(let k=0;k<parts;k++){
+      rocks.push({ 
+        x: r.x + (Math.random()-0.5)*20, 
+        y: r.y + (Math.random()-0.5)*20, 
+        r: r.r*(0.45+Math.random()*0.2), 
+        hp: Math.ceil(r.r*0.5), 
+        vx:(Math.random()*1-0.5)*1.2, 
+        vy:(Math.random()*1-0.5)*1.2, 
+        baseSpeed: 0.3 + Math.random()*0.6, 
+        value: Math.ceil(r.r*0.4/3)*6, 
+        golden:false 
+      });
+    }
+  }
+  
   rocks.splice(i,1);
-  setTimeout(()=> spawnRock(Math.floor(Math.random()*4)), 600 + Math.random()*900);
-  playFX('destroy'); saveState();
+  
+  if(!r.fromBoss){
+    setTimeout(()=> spawnRock(Math.floor(Math.random()*4)), 600 + Math.random()*900);
+  }
+  
+  playFX('destroy');
+  saveState();
 }
 
 /* --------------------------- difficulty escalation --------------------------- */
 function maybeIncreaseDifficulty(now){
-  // increase difficulty every DIFF_INCREASE_INTERVAL of surviving
   const survived = now - startSurvival;
   const increments = Math.floor(survived / DIFF_INCREASE_INTERVAL);
+  
   if(increments > difficultyLevel){
     difficultyLevel = increments;
-    // decrease spawn interval gradually
-    spawnConfig.spawnInterval = Math.max(spawnConfig.minSpawnInterval, spawnConfig.baseSpawnInterval - difficultyLevel * 90);
-    // increase golden chance gradually but capped
+    currentWave = difficultyLevel + 1;
+    
+    // Check for boss wave
+    if(currentWave % BOSS_WAVE_INTERVAL === 0 && bosses.length === 0){
+      spawnBoss();
+    }
+    
+    spawnConfig.spawnInterval = Math.max(
+      spawnConfig.minSpawnInterval, 
+      spawnConfig.baseSpawnInterval - difficultyLevel * 90
+    );
+    
     goldenChance = Math.min(MAX_GOLDEN_CHANCE, 0.01 + difficultyLevel * 0.02);
-    // slightly increase base rock speed
-    spawnConfig.baseRockSpeed = Math.min(1.4, spawnConfig.baseRockSpeed + difficultyLevel * 0.02);
-    // give a small audio cue
+    spawnConfig.baseRockSpeed = Math.min(1.4, 0.6 + difficultyLevel * 0.02);
+    
     playFX('upgrade');
+    showNotification(`🌊 Wave ${currentWave} - Difficulty Increased!`);
   }
-  // also increase difficulty based on score
-  const extraFromScore = Math.floor((state.score||0) / 50);
+  
+  const extraFromScore = Math.floor((gameState.score||0) / 100);
   if(extraFromScore > difficultyLevel){
     difficultyLevel = extraFromScore;
-    spawnConfig.spawnInterval = Math.max(spawnConfig.minSpawnInterval, spawnConfig.baseSpawnInterval - difficultyLevel * 90);
+    currentWave = difficultyLevel + 1;
+    spawnConfig.spawnInterval = Math.max(
+      spawnConfig.minSpawnInterval, 
+      spawnConfig.baseSpawnInterval - difficultyLevel * 90
+    );
     goldenChance = Math.min(MAX_GOLDEN_CHANCE, goldenChance + 0.01);
   }
+  
+  // Update wave display
+  document.getElementById('waveCounter').textContent = `Wave ${currentWave}`;
+  
+  // Update survival timer
+  const survivalSeconds = Math.floor(survived / 1000);
+  const mins = Math.floor(survivalSeconds / 60);
+  const secs = survivalSeconds % 60;
+  document.getElementById('survivalTimer').textContent = 
+    `${String(mins).padStart(2,'0')}:${String(secs).padStart(2,'0')}`;
 }
 
-/* --------------------------- spawn loop wrapper --------------------------- */
-const game = { paused:false, baseSpawn: spawnConfig.baseSpawnInterval, spawnInterval: spawnConfig.spawnInterval, rockBase:spawnConfig.baseRockSpeed, lastSpawn:performance.now(), lastFire:performance.now(), passiveTick:performance.now() };
+/* --------------------------- game loop object --------------------------- */
+const gameLoop = { 
+  paused:false, 
+  lastSpawn:performance.now(), 
+  lastFire:performance.now(), 
+  passiveTick:performance.now() 
+};
 
 /* --------------------------- render helpers --------------------------- */
 function renderBG(now){
   ctxBG.clearRect(0,0,bg.width,bg.height);
   const grd = ctxBG.createLinearGradient(0,0,bg.width,bg.height);
-  grd.addColorStop(0,'#001428'); grd.addColorStop(0.6,'#020213'); grd.addColorStop(1,'#000008');
-  ctxBG.fillStyle = grd; ctxBG.fillRect(0,0,bg.width,bg.height);
+  grd.addColorStop(0,'#001428');
+  grd.addColorStop(0.6,'#020213');
+  grd.addColorStop(1,'#000008');
+  ctxBG.fillStyle = grd;
+  ctxBG.fillRect(0,0,bg.width,bg.height);
+  
   const t = now * 0.00004;
   for(let i=0;i<5;i++){
     const rx = (Math.sin(t*(i+1)+i)+1)/2 * bg.width;
@@ -312,8 +792,10 @@ function renderBG(now){
     const g = ctxBG.createRadialGradient(rx,ry,rad*0.1, rx,ry,rad);
     g.addColorStop(0, `rgba(139,92,255,${0.02 + i*0.01})`);
     g.addColorStop(1, 'rgba(0,0,0,0)');
-    ctxBG.fillStyle = g; ctxBG.fillRect(rx-rad,ry-rad,rad*2,rad*2);
+    ctxBG.fillStyle = g;
+    ctxBG.fillRect(rx-rad,ry-rad,rad*2,rad*2);
   }
+  
   for(let i=0;i<180;i++){
     const x = (i*37) % bg.width;
     const y = (i*97 + (now*0.01)) % bg.height;
@@ -322,271 +804,759 @@ function renderBG(now){
   }
 }
 
-function drawShip(p){
-  ctx.save(); ctx.translate(p.x, p.y);
-  ctx.beginPath(); ctx.fillStyle = 'rgba(0,240,255,0.06)'; ctx.arc(0,0,p.r+22,0,Math.PI*2); ctx.fill();
-  ctx.beginPath(); ctx.moveTo(p.r,0); ctx.lineTo(-p.r*0.7, -p.r*0.9); ctx.lineTo(-p.r*0.7, p.r*0.9); ctx.closePath();
-  const g = ctx.createLinearGradient(-p.r, -p.r, p.r, p.r); g.addColorStop(0,'#bff'); g.addColorStop(1,'#6ee');
-  ctx.fillStyle = g; ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 1; ctx.stroke();
-  ctx.beginPath(); ctx.fillStyle = '#012028'; ctx.arc(-p.r*0.25,0,p.r*0.42,0,Math.PI*2); ctx.fill();
-  if(p.shield && p.shield > 0){ ctx.beginPath(); ctx.strokeStyle = 'rgba(120,240,255,0.5)'; ctx.lineWidth = 4; ctx.arc(0,0,p.r+12,0,Math.PI*2); ctx.stroke(); }
+function drawShip(p, now){
+  ctx.save();
+  ctx.translate(p.x, p.y);
+  
+  // Glow effect
+  ctx.beginPath();
+  ctx.fillStyle = 'rgba(0,240,255,0.06)';
+  ctx.arc(0,0,p.r+22,0,Math.PI*2);
+  ctx.fill();
+  
+  // Invulnerability effect
+  if(p.invulnerable && now < p.invulnerable){
+    const pulse = Math.sin(now * 0.02) * 0.3 + 0.7;
+    ctx.beginPath();
+    ctx.strokeStyle = `rgba(255,215,0,${pulse})`;
+    ctx.lineWidth = 3;
+    ctx.arc(0,0,p.r+15,0,Math.PI*2);
+    ctx.stroke();
+  }
+  
+  // Ship body
+  ctx.beginPath();
+  ctx.moveTo(p.r,0);
+  ctx.lineTo(-p.r*0.7, -p.r*0.9);
+  ctx.lineTo(-p.r*0.7, p.r*0.9);
+  ctx.closePath();
+  
+  const g = ctx.createLinearGradient(-p.r, -p.r, p.r, p.r);
+  g.addColorStop(0,'#bff');
+  g.addColorStop(1,'#6ee');
+  ctx.fillStyle = g;
+  ctx.fill();
+  ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+  ctx.lineWidth = 1;
+  ctx.stroke();
+  
+  // Cockpit
+  ctx.beginPath();
+  ctx.fillStyle = '#012028';
+  ctx.arc(-p.r*0.25,0,p.r*0.42,0,Math.PI*2);
+  ctx.fill();
+  
+  // Shield
+  if(p.shield && p.shield > 0){
+    ctx.beginPath();
+    const shieldAlpha = Math.min(1, p.shield / (p.maxShield || 20));
+    ctx.strokeStyle = `rgba(120,240,255,${shieldAlpha * 0.7})`;
+    ctx.lineWidth = 4;
+    ctx.arc(0,0,p.r+12,0,Math.PI*2);
+    ctx.stroke();
+  }
+  
   ctx.restore();
 }
 
 function drawRock(r){
   if(r.golden){
-    // golden rock look
-    const grad = ctx.createRadialGradient(r.x - r.r*0.2, r.y - r.r*0.2, r.r*0.1, r.x, r.y, r.r);
-    grad.addColorStop(0, '#fff4c8'); grad.addColorStop(0.6, '#f5d06a'); grad.addColorStop(1, '#9a6b14');
-    ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = 'rgba(255,230,140,0.25)'; ctx.lineWidth = 2; ctx.stroke();
+    const grad = ctx.createRadialGradient(
+      r.x - r.r*0.2, r.y - r.r*0.2, r.r*0.1, 
+      r.x, r.y, r.r
+    );
+    grad.addColorStop(0, '#fff4c8');
+    grad.addColorStop(0.6, '#f5d06a');
+    grad.addColorStop(1, '#9a6b14');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(r.x, r.y, r.r, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(255,230,140,0.25)';
+    ctx.lineWidth = 2;
+    ctx.stroke();
   } else {
-    const grad = ctx.createRadialGradient(r.x - r.r*0.3, r.y - r.r*0.3, r.r*0.1, r.x, r.y, r.r);
-    grad.addColorStop(0, '#ddd'); grad.addColorStop(0.6, '#9a9a9a'); grad.addColorStop(1, '#454545');
-    ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, Math.PI*2); ctx.fill();
-    ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 1; ctx.beginPath();
-    ctx.moveTo(r.x - r.r*0.5, r.y - r.r*0.2); ctx.lineTo(r.x + r.r*0.2, r.y + r.r*0.6); ctx.stroke();
+    const grad = ctx.createRadialGradient(
+      r.x - r.r*0.3, r.y - r.r*0.3, r.r*0.1, 
+      r.x, r.y, r.r
+    );
+    grad.addColorStop(0, '#ddd');
+    grad.addColorStop(0.6, '#9a9a9a');
+    grad.addColorStop(1, '#454545');
+    ctx.fillStyle = grad;
+    ctx.beginPath();
+    ctx.arc(r.x, r.y, r.r, 0, Math.PI*2);
+    ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.18)';
+    ctx.lineWidth = 1;
+    ctx.beginPath();
+    ctx.moveTo(r.x - r.r*0.5, r.y - r.r*0.2);
+    ctx.lineTo(r.x + r.r*0.2, r.y + r.r*0.6);
+    ctx.stroke();
   }
-  ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(r.x - r.r, r.y - r.r - 8, r.r*2, 6);
+  
+  // HP bar
+  ctx.fillStyle = 'rgba(0,0,0,0.45)';
+  ctx.fillRect(r.x - r.r, r.y - r.r - 8, r.r*2, 6);
+  
   const maxHp = Math.ceil(r.r/3)*6 * (r.golden?1.9:1);
   ctx.fillStyle = r.golden? '#ffd36b' : '#ff6b6b';
   ctx.fillRect(r.x - r.r, r.y - r.r - 8, (r.hp / maxHp) * r.r*2, 6);
 }
 
+function drawBoss(boss){
+  // Boss body with ominous glow
+  const grad = ctx.createRadialGradient(
+    boss.x - boss.r*0.2, boss.y - boss.r*0.2, boss.r*0.1,
+    boss.x, boss.y, boss.r
+  );
+  grad.addColorStop(0, '#ff6b6b');
+  grad.addColorStop(0.5, '#8b0000');
+  grad.addColorStop(1, '#2d0000');
+  
+  ctx.fillStyle = grad;
+  ctx.beginPath();
+  ctx.arc(boss.x, boss.y, boss.r, 0, Math.PI*2);
+  ctx.fill();
+  
+  // Pulsing outline
+  ctx.strokeStyle = 'rgba(255,0,0,0.6)';
+  ctx.lineWidth = 3;
+  ctx.stroke();
+  
+  // Skull-like features
+  ctx.fillStyle = '#000';
+  ctx.beginPath();
+  ctx.arc(boss.x - boss.r*0.3, boss.y - boss.r*0.2, boss.r*0.15, 0, Math.PI*2);
+  ctx.arc(boss.x + boss.r*0.3, boss.y - boss.r*0.2, boss.r*0.15, 0, Math.PI*2);
+  ctx.fill();
+  
+  // HP bar
+  const barWidth = boss.r * 2.5;
+  const barHeight = 10;
+  ctx.fillStyle = 'rgba(0,0,0,0.6)';
+  ctx.fillRect(boss.x - barWidth/2, boss.y - boss.r - 20, barWidth, barHeight);
+  
+  const hpPercent = boss.hp / boss.maxHp;
+  ctx.fillStyle = hpPercent > 0.5 ? '#ff4444' : '#ffaa00';
+  ctx.fillRect(boss.x - barWidth/2, boss.y - boss.r - 20, barWidth * hpPercent, barHeight);
+  
+  // Boss name
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 16px Arial';
+  ctx.textAlign = 'center';
+  ctx.fillText(`BOSS - HP: ${Math.ceil(boss.hp)}`, boss.x, boss.y - boss.r - 30);
+}
+
+function drawPowerup(p, now){
+  const type = POWERUP_TYPES[p.type];
+  
+  // Pulsing glow
+  const pulse = Math.sin(now * 0.005) * 0.3 + 0.7;
+  ctx.beginPath();
+  ctx.fillStyle = type.color.replace(')', `,${pulse * 0.2})`).replace('rgb', 'rgba');
+  ctx.arc(p.x, p.y, p.r + 8, 0, Math.PI*2);
+  ctx.fill();
+  
+  // Core
+  ctx.beginPath();
+  ctx.fillStyle = type.color;
+  ctx.arc(p.x, p.y, p.r, 0, Math.PI*2);
+  ctx.fill();
+  
+  // Icon
+  ctx.fillStyle = '#fff';
+  ctx.font = 'bold 16px Arial';
+  ctx.textAlign = 'center';
+  ctx.textBaseline = 'middle';
+  ctx.fillText(type.icon, p.x, p.y);
+}
+
 /* --------------------------- main loop --------------------------- */
 let last = performance.now();
+
 function loop(now){
   const dt = now - last;
   renderBG(now);
-  if(!game.paused){
-    // difficulty management
+  
+  if(!gameLoop.paused){
     maybeIncreaseDifficulty(now);
-
-    // update player
+    
+    // Update player
     if(mode==='pc'){
-      const dx = mouse.x - player.x, dy = mouse.y - player.y;
-      player.x += dx * 0.06 * (dt/16); player.y += dy * 0.06 * (dt/16);
+      const dx = mouse.x - player.x;
+      const dy = mouse.y - player.y;
+      player.x += dx * 0.06 * (dt/16);
+      player.y += dy * 0.06 * (dt/16);
     } else if(mode==='mobile'){
       player.x += (stickPos.x||0) * player.speed * 4 * (dt/16);
       player.y += (stickPos.y||0) * player.speed * 4 * (dt/16);
     } else {
-      let ax=0, ay=0; if(keys['w']) ay-=1; if(keys['s']) ay+=1; if(keys['a']) ax-=1; if(keys['d']) ax+=1;
+      let ax=0, ay=0;
+      if(keys['w'] || keys['arrowup']) ay-=1;
+      if(keys['s'] || keys['arrowdown']) ay+=1;
+      if(keys['a'] || keys['arrowleft']) ax-=1;
+      if(keys['d'] || keys['arrowright']) ax+=1;
       const mag = Math.hypot(ax,ay)||1;
-      player.x += (ax/mag) * player.speed * 2 * (dt/16); player.y += (ay/mag) * player.speed * 2 * (dt/16);
+      player.x += (ax/mag) * player.speed * 2 * (dt/16);
+      player.y += (ay/mag) * player.speed * 2 * (dt/16);
     }
-    player.x = Math.max(0, Math.min(innerWidth, player.x));
-    player.y = Math.max(0, Math.min(innerHeight, player.y));
-
-    // rocks physics (move by vx,vy; occasional small random drift)
+    
+    player.x = Math.max(player.r, Math.min(innerWidth - player.r, player.x));
+    player.y = Math.max(player.r, Math.min(innerHeight - player.r, player.y));
+    
+    // Update bosses
+    for(let i = bosses.length - 1; i >= 0; i--){
+      updateBoss(bosses[i], dt, now);
+      if(bosses[i].hp <= 0){
+        destroyBoss(i);
+      }
+    }
+    
+    // Update rocks
     for(let i=rocks.length-1;i>=0;i--){
       const r = rocks[i];
-      // apply base speed scaling from upgrades/difficulty
-      const speedScale = 1 + ((state.upgrades && state.upgrades.rockSpeed)||0)*0.05 + difficultyLevel*0.02;
+      const speedScale = 1 + ((gameState.upgrades && gameState.upgrades.rockSpeed)||0)*0.05 + difficultyLevel*0.02;
       r.x += r.vx * speedScale * (dt/16);
       r.y += r.vy * speedScale * (dt/16);
-      // slight drift random
-      r.vx += (Math.random()-0.5)*0.01; r.vy += (Math.random()-0.5)*0.01;
-      // wrap edges
+      
+      r.vx += (Math.random()-0.5)*0.01;
+      r.vy += (Math.random()-0.5)*0.01;
+      
+      // Wrap edges
       if(r.x < -r.r - 30) r.x = innerWidth + r.r + 10;
       if(r.x > innerWidth + r.r + 30) r.x = -r.r - 10;
       if(r.y < -r.r - 30) r.y = innerHeight + r.r + 10;
       if(r.y > innerHeight + r.r + 30) r.y = -r.r - 10;
-      // collision with player
+      
+      // Collision with player
       const dist = Math.hypot(r.x - player.x, r.y - player.y);
       if(dist < r.r + player.r){
         let dmg = 2;
-        if(player.shield && player.shield > 0){ const take = Math.min(player.shield, dmg); player.shield -= take; dmg -= take; }
-        player.health -= dmg;
-        r.x += (r.x - player.x)/Math.max(dist,1) * 18; r.y += (r.y - player.y)/Math.max(dist,1) * 18;
-        for(let k=0;k<6;k++) particles.push({x:player.x+(Math.random()-0.5)*24,y:player.y+(Math.random()-0.5)*24,vx:(Math.random()-0.5)*3,vy:(Math.random()-0.5)*3,life:12,col:'#ff9d9d'});
-        playFX('hit');
+        
+        if(player.invulnerable && now < player.invulnerable){
+          dmg = 0;
+        } else {
+          if(player.shield && player.shield > 0){
+            const take = Math.min(player.shield, dmg);
+            player.shield -= take;
+            dmg -= take;
+          }
+          player.health -= dmg;
+        }
+        
+        r.x += (r.x - player.x)/Math.max(dist,1) * 18;
+        r.y += (r.y - player.y)/Math.max(dist,1) * 18;
+        
+        for(let k=0;k<6;k++){
+          particles.push({
+            x:player.x+(Math.random()-0.5)*24,
+            y:player.y+(Math.random()-0.5)*24,
+            vx:(Math.random()-0.5)*3,
+            vy:(Math.random()-0.5)*3,
+            life:12,
+            col:'#ff9d9d'
+          });
+        }
+        
+        if(dmg > 0) playFX('hit');
         if(Math.random() < 0.07) destroyRock(i);
       }
+      
       if(r.hp <= 0) destroyRock(i);
     }
-
-    // missiles homing and collisions
+    
+    // Update missiles
     for(let i=missiles.length-1;i>=0;i--){
       const m = missiles[i];
-      if(m.target && rocks.includes(m.target)){
-        const tx = m.target.x, ty = m.target.y; const dx = tx - m.x, dy = ty - m.y; const d = Math.hypot(dx,dy)||1;
+      
+      // Homing
+      if(m.target && (rocks.includes(m.target) || bosses.includes(m.target))){
+        const tx = m.target.x, ty = m.target.y;
+        const dx = tx - m.x, dy = ty - m.y;
+        const d = Math.hypot(dx,dy)||1;
         const homing = 0.9 + ((player.homing||0)*0.07);
         m.vx = (m.vx * (1-homing)) + (dx/d) * player.missileSpeed * homing;
         m.vy = (m.vy * (1-homing)) + (dy/d) * player.missileSpeed * homing;
       }
-      m.x += m.vx * (dt/16); m.y += m.vy * (dt/16);
+      
+      m.x += m.vx * (dt/16);
+      m.y += m.vy * (dt/16);
+      
+      // Wrap
       if(m.x < -30) m.x = innerWidth + 30;
       if(m.x > innerWidth + 30) m.x = -30;
       if(m.y < -30) m.y = innerHeight + 30;
       if(m.y > innerHeight + 30) m.y = -30;
-      for(let j=rocks.length-1;j>=0;j--){
-        const r = rocks[j];
-        if(Math.hypot(r.x - m.x, r.y - m.y) < r.r + 6){
-          const crit = Math.random() < (player.crit||0); const dmg = player.damage * (crit?2:1);
-          r.hp -= dmg;
-          for(let p=0;p<10;p++) particles.push({x:m.x,y:m.y,vx:(Math.random()-0.5)*4,vy:(Math.random()-0.5)*4,life:18,col: crit ? '#ffd46a' : '#ffb2b2'});
-          playFX('hit');
-          if(player.explosion){
-            const rad = 26 * player.explosion;
-            for(let rr=rocks.length-1; rr>=0; rr--){
-              if(rr!==j){
-                const dd = Math.hypot(rocks[rr].x - m.x, rocks[rr].y - m.y);
-                if(dd < rad) rocks[rr].hp -= Math.ceil(dmg*0.5);
-              }
-            }
+      
+      let hit = false;
+      
+      // Check boss collision
+      for(let j=bosses.length-1;j>=0;j--){
+        const boss = bosses[j];
+        if(Math.hypot(boss.x - m.x, boss.y - m.y) < boss.r + 6){
+          const crit = Math.random() < (player.crit||0);
+          const dmg = player.damage * (crit?2:1);
+          boss.hp -= dmg;
+          
+          for(let p=0;p<15;p++){
+            particles.push({
+              x:m.x,
+              y:m.y,
+              vx:(Math.random()-0.5)*5,
+              vy:(Math.random()-0.5)*5,
+              life:20,
+              col: crit ? '#ffd46a' : '#ff6b6b'
+            });
           }
-          missiles.splice(i,1);
+          
+          playFX('hit');
+          hit = true;
           break;
         }
       }
+      
+      // Check rock collision
+      if(!hit){
+        for(let j=rocks.length-1;j>=0;j--){
+          const r = rocks[j];
+          if(Math.hypot(r.x - m.x, r.y - m.y) < r.r + 6){
+            const crit = Math.random() < (player.crit||0);
+            const dmg = player.damage * (crit?2:1);
+            r.hp -= dmg;
+            
+            for(let p=0;p<10;p++){
+              particles.push({
+                x:m.x,
+                y:m.y,
+                vx:(Math.random()-0.5)*4,
+                vy:(Math.random()-0.5)*4,
+                life:18,
+                col: crit ? '#ffd46a' : '#ffb2b2'
+              });
+            }
+            
+            playFX('hit');
+            
+            // Explosion damage
+            if(player.explosion){
+              const rad = 26 * player.explosion;
+              for(let rr=rocks.length-1; rr>=0; rr--){
+                if(rr!==j){
+                  const dd = Math.hypot(rocks[rr].x - m.x, rocks[rr].y - m.y);
+                  if(dd < rad) rocks[rr].hp -= Math.ceil(dmg*0.5);
+                }
+              }
+            }
+            
+            hit = true;
+            break;
+          }
+        }
+      }
+      
+      if(hit) missiles.splice(i,1);
     }
-
-    // particles
-    for(let i=particles.length-1;i>=0;i--){ const p = particles[i]; p.x += p.vx * (dt/16); p.y += p.vy * (dt/16); p.vx *= 0.98; p.vy *= 0.98; p.life--; if(p.life<=0) particles.splice(i,1); }
-
-    // passive regen
-    if(player.regen && now - game.passiveTick > 2000){ player.health = Math.min(player.maxHealth, player.health + player.regen); game.passiveTick = now; }
-
-    // spawn & auto-fire
-    if(now - game.lastSpawn > spawnConfig.spawnInterval){ game.lastSpawn = now; // possibly spawn multiple based on difficulty
-      // spawn base one
+    
+    // Update particles
+    for(let i=particles.length-1;i>=0;i--){
+      const p = particles[i];
+      p.x += p.vx * (dt/16);
+      p.y += p.vy * (dt/16);
+      p.vx *= 0.98;
+      p.vy *= 0.98;
+      p.life--;
+      if(p.life<=0) particles.splice(i,1);
+    }
+    
+    // Update power-ups
+    for(let i=powerups.length-1;i>=0;i--){
+      const p = powerups[i];
+      p.life--;
+      if(p.life <= 0){
+        powerups.splice(i,1);
+        continue;
+      }
+      
+      // Check collection
+      const dist = Math.hypot(p.x - player.x, p.y - player.y);
+      if(dist < p.r + player.r){
+        collectPowerup(p);
+        powerups.splice(i,1);
+      }
+    }
+    
+    // Passive regen
+    if(player.regen && now - gameLoop.passiveTick > 2000){
+      player.health = Math.min(player.maxHealth, player.health + player.regen);
+      gameLoop.passiveTick = now;
+    }
+    
+    // Spawning
+    if(now - gameLoop.lastSpawn > spawnConfig.spawnInterval){
+      gameLoop.lastSpawn = now;
       spawnRock(Math.floor(Math.random()*4));
-      // spawn an extra rock occasionally when difficulty is higher
-      if(Math.random() < Math.min(0.5, difficultyLevel * 0.08)) spawnRock(Math.floor(Math.random()*4));
+      
+      if(Math.random() < Math.min(0.5, difficultyLevel * 0.08)){
+        spawnRock(Math.floor(Math.random()*4));
+      }
     }
+    
     autoFire(now);
-
-    // death
+    
+    // Death check
     if(player.health <= 0){
-      game.paused = true;
+      gameLoop.paused = true;
       playFX('death');
-      // reset survival timer on death
-      startSurvival = performance.now();
-      difficultyLevel = 0;
-      goldenChance = 0.01;
+      showGameOver();
     }
   }
-
-  // render
+  
+  // Render
   ctx.clearRect(0,0,game.width,game.height);
+  
   for(const r of rocks) drawRock(r);
-  for(const m of missiles){ ctx.beginPath(); ctx.fillStyle = 'rgba(255,150,110,0.95)'; ctx.arc(m.x, m.y, 4, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = 'rgba(255,200,130,0.2)'; ctx.fillRect(m.x-2, m.y-10, 4, 8); }
-  for(const p of particles) { ctx.fillStyle = p.col; ctx.fillRect(p.x, p.y, 2,2); }
-  drawShip(player);
+  for(const boss of bosses) drawBoss(boss);
+  for(const p of powerups) drawPowerup(p, now);
+  
+  for(const m of missiles){
+    ctx.beginPath();
+    ctx.fillStyle = 'rgba(255,150,110,0.95)';
+    ctx.arc(m.x, m.y, 4, 0, Math.PI*2);
+    ctx.fill();
+    ctx.fillStyle = 'rgba(255,200,130,0.2)';
+    ctx.fillRect(m.x-2, m.y-10, 4, 8);
+  }
+  
+  for(const p of particles){
+    ctx.fillStyle = p.col;
+    ctx.fillRect(p.x, p.y, 2,2);
+  }
+  
+  drawShip(player, now);
+  
+  // Update HUD
   document.getElementById('hpVal').textContent = Math.max(0, Math.floor(player.health));
-  document.getElementById('moneyVal').textContent = Math.floor(state.money || 0);
-  document.getElementById('scoreVal').textContent = Math.floor(state.score || 0);
+  document.getElementById('moneyVal').textContent = Math.floor(gameState.money || 0);
+  document.getElementById('scoreVal').textContent = Math.floor(gameState.score || 0);
   document.getElementById('dmgVal').textContent = player.damage;
-  last = now; requestAnimationFrame(loop);
+  document.getElementById('highScoreVal').textContent = Math.floor(gameState.highScore || 0);
+  
+  last = now;
+  requestAnimationFrame(loop);
 }
+
 requestAnimationFrame(loop);
 
+/* --------------------------- Game Over --------------------------- */
+function showGameOver(){
+  const survivalTime = Math.floor((performance.now() - startSurvival) / 1000);
+  const mins = Math.floor(survivalTime / 60);
+  const secs = survivalTime % 60;
+  
+  document.getElementById('finalScore').textContent = Math.floor(gameState.score);
+  document.getElementById('finalHighScore').textContent = Math.floor(gameState.highScore);
+  document.getElementById('finalTime').textContent = `${mins}:${String(secs).padStart(2,'0')}`;
+  document.getElementById('finalWave').textContent = currentWave;
+  document.getElementById('finalMoney').textContent = Math.floor(gameState.money);
+  
+  document.getElementById('gameOver').style.display = 'flex';
+  saveState();
+}
+
+document.getElementById('respawnBtn').addEventListener('click', ()=>{
+  player.health = player.maxHealth;
+  player.shield = 0;
+  player.x = innerWidth/2;
+  player.y = innerHeight/2;
+  
+  rocks = [];
+  missiles = [];
+  particles = [];
+  powerups = [];
+  bosses = [];
+  
+  for(let i=0;i<8;i++) spawnRock();
+  
+  startSurvival = performance.now();
+  difficultyLevel = 0;
+  currentWave = 1;
+  goldenChance = 0.01;
+  gameState.score = 0;
+  
+  document.getElementById('gameOver').style.display = 'none';
+  gameLoop.paused = false;
+  saveState();
+});
+
 /* --------------------------- UI & settings handling --------------------------- */
-const modal = document.getElementById('settingsModal'), openSettings = document.getElementById('openSettings'), closeSettings = document.getElementById('closeSettings'), saveSettings = document.getElementById('saveSettings');
-const controlSelect = document.getElementById('controlSelect'), volRange = document.getElementById('volRange'), fxToggle = document.getElementById('fxToggle');
+const modal = document.getElementById('settingsModal');
+const openSettings = document.getElementById('openSettings');
+const closeSettings = document.getElementById('closeSettings');
+const saveSettings = document.getElementById('saveSettings');
+const controlSelect = document.getElementById('controlSelect');
+const volRange = document.getElementById('volRange');
+const fxToggle = document.getElementById('fxToggle');
 
 openSettings.addEventListener('click', ()=>{
-  controlSelect.value = state.settings.mode || 'pc';
-  volRange.value = state.settings.volume || 0.6;
-  fxToggle.checked = state.settings.fx !== false;
+  controlSelect.value = gameState.settings.mode || 'pc';
+  volRange.value = gameState.settings.volume || 0.6;
+  fxToggle.checked = gameState.settings.fx !== false;
   modal.style.display = 'flex';
 });
-closeSettings.addEventListener('click', ()=>{ modal.style.display = 'none'; });
-saveSettings.addEventListener('click', ()=>{
-  state.settings.mode = controlSelect.value;
-  state.settings.volume = parseFloat(volRange.value);
-  state.settings.fx = fxToggle.checked;
-  setVolume(state.settings.volume);
-  mode = state.settings.mode;
-  if(mode === 'mobile') joystick.style.display = 'block'; else joystick.style.display = 'none';
-  modal.style.display = 'none'; saveState(); playFX('upgrade');
+
+closeSettings.addEventListener('click', ()=>{
+  modal.style.display = 'none';
 });
 
-/* --------------------------- tree / upgrade UI (reused) --------------------------- */
-const openTreeBtn = document.getElementById('openTree'), upgradeOverlay = document.getElementById('upgradeOverlay'), closeTreeBtn = document.getElementById('closeTreeBtn'), resetTree = document.getElementById('resetTree'), treeArea = document.getElementById('treeArea'), tooltip = document.getElementById('tooltip');
-openTreeBtn.addEventListener('click', ()=>{ upgradeOverlay.style.display='flex'; game.paused = true; renderTree(); });
-document.getElementById('closeTreeBtn').addEventListener('click', ()=>{ upgradeOverlay.style.display='none'; game.paused=false; saveState(); });
-resetTree.addEventListener('click', ()=>{ if(confirm('اعد تعيين كل التطويرات؟')){ for(const k in state.upgrades) state.upgrades[k]=0; state.money=0; state.score=0; applyAllUpgrades(); saveState(); renderTree(); } });
+saveSettings.addEventListener('click', ()=>{
+  gameState.settings.mode = controlSelect.value;
+  gameState.settings.volume = parseFloat(volRange.value);
+  gameState.settings.fx = fxToggle.checked;
+  setVolume(gameState.settings.volume);
+  mode = gameState.settings.mode;
+  if(mode === 'mobile') joystick.style.display = 'block';
+  else joystick.style.display = 'none';
+  modal.style.display = 'none';
+  saveState();
+  playFX('upgrade');
+});
+
+/* --------------------------- tree / upgrade UI --------------------------- */
+const openTreeBtn = document.getElementById('openTree');
+const upgradeOverlay = document.getElementById('upgradeOverlay');
+const closeTreeBtn = document.getElementById('closeTreeBtn');
+const resetTree = document.getElementById('resetTree');
+const treeArea = document.getElementById('treeArea');
+const tooltip = document.getElementById('tooltip');
+
+openTreeBtn.addEventListener('click', ()=>{
+  upgradeOverlay.style.display='flex';
+  gameLoop.paused = true;
+  renderTree();
+});
+
+closeTreeBtn.addEventListener('click', ()=>{
+  upgradeOverlay.style.display='none';
+  gameLoop.paused=false;
+  saveState();
+});
+
+resetTree.addEventListener('click', ()=>{
+  if(confirm('اعد تعيين كل التطويرات؟')){
+    for(const k in gameState.upgrades) gameState.upgrades[k]=0;
+    applyAllUpgrades();
+    saveState();
+    renderTree();
+  }
+});
 
 const layout = [
-  {id:'damage', x:160, y:90},{id:'fireRate', x:420, y:200},{id:'missiles', x:720, y:200},
-  {id:'missileSpeed', x:720, y:340},{id:'explosion', x:980, y:440},{id:'split', x:1180, y:560},
-  {id:'money', x:520, y:360},{id:'hpMax', x:200, y:360},{id:'regen', x:200, y:520},
-  {id:'rockDensity', x:640, y:520},{id:'rockSpeed', x:860, y:640},{id:'homing', x:960, y:320},
-  {id:'shield', x:40, y:640},{id:'speed', x:40, y:840}
+  {id:'damage', x:160, y:90},
+  {id:'fireRate', x:420, y:200},
+  {id:'missiles', x:720, y:200},
+  {id:'missileSpeed', x:720, y:340},
+  {id:'explosion', x:980, y:440},
+  {id:'split', x:1180, y:560},
+  {id:'money', x:520, y:360},
+  {id:'hpMax', x:200, y:360},
+  {id:'regen', x:200, y:520},
+  {id:'rockDensity', x:640, y:520},
+  {id:'rockSpeed', x:860, y:640},
+  {id:'homing', x:960, y:320},
+  {id:'shield', x:40, y:640},
+  {id:'speed', x:40, y:840},
+  {id:'crit', x:420, y:90}
 ];
 
-function isUnlockedNode(id){ const def = UP[id]; if(!def) return false; if(def.deps.length === 0) return true; return def.deps.some(d => (state.upgrades[d] && state.upgrades[d] > 0)); }
+function isUnlockedNode(id){
+  const def = UP[id];
+  if(!def) return false;
+  if(def.deps.length === 0) return true;
+  return def.deps.some(d => (gameState.upgrades[d] && gameState.upgrades[d] > 0));
+}
 
 function renderTree(){
   treeArea.innerHTML = '';
-  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg'); svg.setAttribute('width','100%'); svg.setAttribute('height','100%'); svg.style.position='absolute'; svg.style.left='0'; svg.style.top='0';
+  
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('width','100%');
+  svg.setAttribute('height','100%');
+  svg.style.position='absolute';
+  svg.style.left='0';
+  svg.style.top='0';
   treeArea.appendChild(svg);
-  const cont = document.createElement('div'); cont.style.position='absolute'; cont.style.left='0'; cont.style.top='0'; cont.style.width='2200px'; cont.style.height='1600px'; treeArea.appendChild(cont);
-  const pos = {}; layout.forEach(n=> pos[n.id] = {x: n.x + 95, y: n.y + 30});
+  
+  const cont = document.createElement('div');
+  cont.style.position='absolute';
+  cont.style.left='0';
+  cont.style.top='0';
+  cont.style.width='2200px';
+  cont.style.height='1600px';
+  treeArea.appendChild(cont);
+  
+  const pos = {};
+  layout.forEach(n=> pos[n.id] = {x: n.x + 95, y: n.y + 30});
+  
+  // Draw connections
   layout.forEach(node=>{
-    const def = UP[node.id]; if(!def) return;
+    const def = UP[node.id];
+    if(!def) return;
+    
     def.deps.forEach(dep=>{
       if(!pos[dep]) return;
-      const p1 = pos[dep], p2 = pos[node.id]; const mx = (p1.x + p2.x)/2;
+      const p1 = pos[dep], p2 = pos[node.id];
+      const mx = (p1.x + p2.x)/2;
       const d = `M ${p1.x} ${p1.y} C ${mx} ${p1.y-70}, ${mx} ${p2.y+70}, ${p2.x} ${p2.y}`;
-      const path = document.createElementNS('http://www.w3.org/2000/svg','path'); path.setAttribute('d',d);
-      const color = (state.upgrades[dep] && state.upgrades[dep]>0) ? 'rgba(0,240,255,0.95)' : 'rgba(255,255,255,0.06)';
-      path.setAttribute('stroke', color); path.setAttribute('stroke-width','3'); path.setAttribute('fill','none'); svg.appendChild(path);
+      const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+      path.setAttribute('d',d);
+      const color = (gameState.upgrades[dep] && gameState.upgrades[dep]>0) ? 
+        'rgba(0,240,255,0.95)' : 'rgba(255,255,255,0.06)';
+      path.setAttribute('stroke', color);
+      path.setAttribute('stroke-width','3');
+      path.setAttribute('fill','none');
+      svg.appendChild(path);
     });
   });
+  
+  // Draw nodes
   layout.forEach(node=>{
-    const def = UP[node.id]; if(!def) return;
-    const el = document.createElement('div'); el.className='node'; el.style.left = node.x + 'px'; el.style.top = node.y + 'px';
-    const lvl = state.upgrades[node.id] || 0;
-    el.innerHTML = `<div class="lvl">Lv.${lvl}/${def.max}</div><div class="title">${def.name}</div><div class="sub">${def.desc}</div><div class="cost">${def.cost}💠</div>`;
+    const def = UP[node.id];
+    if(!def) return;
+    
+    const el = document.createElement('div');
+    el.className='node';
+    el.style.left = node.x + 'px';
+    el.style.top = node.y + 'px';
+    
+    const lvl = gameState.upgrades[node.id] || 0;
+    el.innerHTML = `
+      <div class="lvl">Lv.${lvl}/${def.max}</div>
+      <div class="title">${def.name}</div>
+      <div class="sub">${def.desc}</div>
+      <div class="cost">${def.cost}💠</div>
+    `;
+    
     if(lvl >= def.max) el.classList.add('locked');
-    else if(isUnlockedNode(node.id) && (state.money || 0) >= def.cost) el.classList.add('buyable');
+    else if(isUnlockedNode(node.id) && (gameState.money || 0) >= def.cost) el.classList.add('buyable');
     else if(isUnlockedNode(node.id)) el.classList.add('unlocked');
     else el.classList.add('locked');
-    el.addEventListener('mouseenter', ev=>{ tooltip.style.left = (ev.clientX+12)+'px'; tooltip.style.top = (ev.clientY+12)+'px'; tooltip.style.display='block'; tooltip.innerHTML = `<b>${def.name}</b><br>${def.desc}<br>تكلفة: ${def.cost} • الحد: ${def.max} • المستوى: ${lvl}`; });
-    el.addEventListener('mousemove', ev=>{ tooltip.style.left = (ev.clientX+12)+'px'; tooltip.style.top = (ev.clientY+12)+'px'; });
-    el.addEventListener('mouseleave', ()=>{ tooltip.style.display='none'; });
-    el.addEventListener('click', ()=>{
-      if(state.upgrades[node.id] >= def.max){ alert('وصلت الحد الأقصى'); return; }
-      if(!isUnlockedNode(node.id)){ alert('هذه العقدة مقفلة'); return; }
-      if((state.money || 0) < def.cost){ alert('فلوسك قليلة'); return; }
-      state.money -= def.cost; state.upgrades[node.id] = (state.upgrades[node.id]||0) + 1;
-      UP[node.id].cost = Math.ceil(def.cost * 1.25);
-      applyAllUpgrades(); saveState(); renderTree(); playFX('upgrade');
+    
+    el.addEventListener('mouseenter', ev=>{
+      tooltip.style.left = (ev.clientX+12)+'px';
+      tooltip.style.top = (ev.clientY+12)+'px';
+      tooltip.style.display='block';
+      tooltip.innerHTML = `<b>${def.name}</b><br>${def.desc}<br>تكلفة: ${def.cost} • الحد: ${def.max} • المستوى: ${lvl}`;
     });
+    
+    el.addEventListener('mousemove', ev=>{
+      tooltip.style.left = (ev.clientX+12)+'px';
+      tooltip.style.top = (ev.clientY+12)+'px';
+    });
+    
+    el.addEventListener('mouseleave', ()=>{
+      tooltip.style.display='none';
+    });
+    
+    el.addEventListener('click', ()=>{
+      if(gameState.upgrades[node.id] >= def.max){
+        alert('وصلت الحد الأقصى');
+        return;
+      }
+      if(!isUnlockedNode(node.id)){
+        alert('هذه العقدة مقفلة');
+        return;
+      }
+      if((gameState.money || 0) < def.cost){
+        alert('فلوسك قليلة');
+        return;
+      }
+      
+      gameState.money -= def.cost;
+      gameState.upgrades[node.id] = (gameState.upgrades[node.id]||0) + 1;
+      UP[node.id].cost = Math.ceil(def.cost * 1.25);
+      applyAllUpgrades();
+      saveState();
+      renderTree();
+      playFX('upgrade');
+    });
+    
     cont.appendChild(el);
   });
-
-  // drag
+  
+  // Drag functionality
   let mouseDown=false, sx=0, sy=0, ox=0, oy=0;
   treeArea.style.left = Math.max(0, (innerWidth - 1200)/2) + 'px';
   treeArea.style.top = Math.max(0, (innerHeight - 800)/2) + 'px';
-  treeArea.onmousedown = e=>{ mouseDown=true; sx=e.clientX; sy=e.clientY; ox=parseInt(treeArea.style.left||0); oy=parseInt(treeArea.style.top||0); treeArea.style.cursor='grabbing'; }
-  window.addEventListener('mousemove', e=>{ if(!mouseDown) return; const dx = e.clientX - sx; const dy = e.clientY - sy; treeArea.style.left = (ox + dx) + 'px'; treeArea.style.top = (oy + dy) + 'px'; });
-  window.addEventListener('mouseup', ()=>{ mouseDown=false; treeArea.style.cursor='grab'; });
+  
+  treeArea.onmousedown = e=>{
+    mouseDown=true;
+    sx=e.clientX;
+    sy=e.clientY;
+    ox=parseInt(treeArea.style.left||0);
+    oy=parseInt(treeArea.style.top||0);
+    treeArea.style.cursor='grabbing';
+  }
+  
+  window.addEventListener('mousemove', e=>{
+    if(!mouseDown) return;
+    const dx = e.clientX - sx;
+    const dy = e.clientY - sy;
+    treeArea.style.left = (ox + dx) + 'px';
+    treeArea.style.top = (oy + dy) + 'px';
+  });
+  
+  window.addEventListener('mouseup', ()=>{
+    mouseDown=false;
+    treeArea.style.cursor='grab';
+  });
 }
 
-/* --------------------------- helper: toggle tree & save --------------------------- */
-function toggleTree(){ const ov = document.getElementById('upgradeOverlay'); if(ov.style.display === 'flex') { ov.style.display='none'; game.paused=false; saveState(); } else { document.getElementById('upgradeOverlay').style.display='flex'; game.paused=true; renderTree(); } }
-document.getElementById('openTree').addEventListener('click', ()=>{ toggleTree(); });
-document.getElementById('resetBtn').addEventListener('click', ()=>{ if(confirm('تحذف الحفظ بالكامل وتعيد تحميل الصفحة؟')){ localStorage.removeItem(SAVE); location.reload(); } });
+function toggleTree(){
+  const ov = document.getElementById('upgradeOverlay');
+  if(ov.style.display === 'flex'){
+    ov.style.display='none';
+    gameLoop.paused=false;
+    saveState();
+  } else {
+    document.getElementById('upgradeOverlay').style.display='flex';
+    gameLoop.paused=true;
+    renderTree();
+  }
+}
+
+document.getElementById('resetBtn').addEventListener('click', ()=>{
+  if(confirm('تحذف الحفظ بالكامل وتعيد تحميل الصفحة؟')){
+    localStorage.removeItem(SAVE);
+    location.reload();
+  }
+});
 
 /* --------------------------- save/load --------------------------- */
-function saveState(){ localStorage.setItem(SAVE, JSON.stringify(state)); }
-
-/* --------------------------- initial UI values --------------------------- */
-document.getElementById('controlSelect').value = state.settings.mode || 'pc';
-document.getElementById('volRange').value = state.settings.volume || 0.6;
-document.getElementById('fxToggle').checked = state.settings.fx !== false;
+function saveState(){
+  try{
+    localStorage.setItem(SAVE, JSON.stringify(gameState));
+  }catch(e){
+    console.error('Save error:', e);
+  }
+}
 
 /* --------------------------- periodic tasks --------------------------- */
 setInterval(()=> saveState(), 6000);
-setInterval(()=>{ // small periodic adjust: make spawnConfig reflect difficulty
-  spawnConfig.spawnInterval = Math.max(spawnConfig.minSpawnInterval, spawnConfig.baseSpawnInterval - difficultyLevel * 90);
+
+setInterval(()=>{
+  spawnConfig.spawnInterval = Math.max(
+    spawnConfig.minSpawnInterval, 
+    spawnConfig.baseSpawnInterval - difficultyLevel * 90
+  );
 }, 4000);
 
-/* --------------------------- done --------------------------- */
+/* --------------------------- Initialize --------------------------- */
+controlSelect.value = gameState.settings.mode || 'pc';
+volRange.value = gameState.settings.volume || 0.6;
+fxToggle.checked = gameState.settings.fx !== false;
+
+console.log('🚀 Space Master Enhanced - Ready!');
 </script>
 </body>
 </html>
