@@ -1,325 +1,670 @@
 <!DOCTYPE html>
 <html lang="ar">
 <head>
-<meta charset="UTF-8">
-<title>Space Survival</title>
-<meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-
+<meta charset="utf-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
+<title>Space — إعادة تصميم</title>
 <style>
-html,body {
-    margin:0;
-    padding:0;
-    overflow:hidden;
-    background:black;
-    font-family:Arial, sans-serif;
-    color:white;
+:root{
+  --bg1:#030422; --bg2:#000006;
+  --neon: #00f0ff; --accent:#8b5cff; --glass: rgba(255,255,255,0.04);
 }
-
-canvas {
-    position:absolute;
-    top:0;
-    left:0;
+*{box-sizing:border-box;font-family:Inter, "Segoe UI", Tahoma, Arial; color:#eafcff}
+html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg1),var(--bg2));}
+canvas{display:block;position:fixed; inset:0; z-index:0;}
+/* Top bar */
+#topBar{position:fixed;left:0;right:0;top:8px;z-index:40;display:flex;justify-content:space-between;align-items:center;padding:6px 14px;pointer-events:none}
+#topBar .title{font-weight:700;font-size:18px;text-align:center;pointer-events:auto}
+#topBar .continue{pointer-events:auto;margin-left:12px;background:linear-gradient(90deg,var(--neon),var(--accent));color:#011; border:none;padding:8px 12px;border-radius:10px;cursor:pointer;box-shadow:0 6px 18px rgba(0,0,0,0.6)}
+/* Bottom HUD */
+#bottomHUD{position:fixed;left:12px;right:12px;bottom:12px;z-index:40;display:flex;justify-content:space-between;gap:12px;padding:12px;border-radius:14px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.32));backdrop-filter: blur(6px);border:1px solid rgba(0,255,255,0.04)}
+.hudItem{display:flex;gap:10px;align-items:center}
+.hudItem .label{font-size:13px;color:rgba(200,255,255,0.8)}
+.hudItem .value{font-weight:800;font-size:16px;color:var(--neon)}
+/* Mode selector overlay */
+#modeSelect{position:fixed;inset:0;z-index:60;background:linear-gradient(180deg, rgba(0,0,0,0.85), rgba(0,0,0,0.9));display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px}
+.modeBtn{padding:14px 26px;border-radius:12px;border:1px solid rgba(255,255,255,0.06);background:rgba(255,255,255,0.02);font-size:18px;cursor:pointer}
+/* Joystick */
+#joystick{position:fixed;left:50%;transform:translateX(-50%);bottom:140px;width:160px;height:160px;border-radius:50%;background:rgba(255,255,255,0.03);display:none;z-index:50;border:1px solid rgba(255,255,255,0.04)}
+#stick{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:68px;height:68px;border-radius:50%;background:linear-gradient(180deg,#bfbfbf,#808080);box-shadow:0 8px 22px rgba(0,0,0,0.6)}
+/* Upgrade tree overlay */
+#upgradeOverlay{position:fixed;inset:0;background:linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.9));display:none;z-index:90;align-items:center;justify-content:center}
+.upgradePanel{width:92%;max-width:1300px;height:86%;background:linear-gradient(180deg, rgba(8,12,20,0.85), rgba(2,4,8,0.95));border-radius:14px;padding:14px;display:flex;gap:12px;box-shadow:0 30px 80px rgba(0,0,0,0.6);border:1px solid rgba(0,255,255,0.04)}
+.leftCol{width:340px;display:flex;flex-direction:column;gap:12px}
+.infoCard{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.12));padding:10px;border-radius:10px;border:1px solid rgba(255,255,255,0.02)}
+.treeCanvasWrap{flex:1;position:relative;overflow:hidden;border-radius:10px;background:radial-gradient(ellipse at 30% 10%, rgba(0,255,220,0.02), transparent 6%), radial-gradient(ellipse at 80% 90%, rgba(139,92,255,0.012), transparent 6%)}
+#treeArea{position:absolute;left:0;top:0;width:2200px;height:1600px;cursor:grab}
+.node{
+  position:absolute;width:180px;padding:10px 12px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.14));
+  border:2px solid rgba(255,255,255,0.04);box-shadow:0 10px 28px rgba(0,0,0,0.6);text-align:center;cursor:pointer;transition:transform .15s,box-shadow .15s,opacity .15s;
 }
-
-#topBar {
-    position:absolute;
-    top:0;
-    width:100%;
-    text-align:center;
-    background:rgba(0,0,0,0.6);
-    padding:8px;
-    font-size:18px;
-    z-index:10;
-}
-
-#bottomHUD {
-    position:absolute;
-    bottom:0;
-    width:100%;
-    background:rgba(0,0,0,0.7);
-    display:flex;
-    justify-content:space-around;
-    padding:10px;
-    font-size:14px;
-    z-index:10;
-}
-
-#upgradeMenu {
-    position:absolute;
-    inset:0;
-    background:rgba(0,0,0,0.95);
-    display:none;
-    z-index:20;
-}
-
-#upgradeTitle {
-    text-align:center;
-    font-size:24px;
-    margin:10px;
-}
-
-#treeContainer {
-    width:2000px;
-    height:2000px;
-    position:absolute;
-    background:radial-gradient(#111,#000);
-    cursor:grab;
-}
-
-.upgrade {
-    position:absolute;
-    width:140px;
-    height:60px;
-    background:linear-gradient(135deg,#333,#111);
-    border:2px solid #555;
-    border-radius:10px;
-    text-align:center;
-    padding:5px;
-    font-size:12px;
-}
-
-.upgrade.locked {
-    opacity:0.3;
-}
-
-.upgrade.unlocked {
-    border-color:#0f0;
-}
-
-#continueBtn {
-    position:absolute;
-    top:10px;
-    right:10px;
-    padding:10px 15px;
-    background:#0a0;
-    border:none;
-    border-radius:8px;
-    cursor:pointer;
-}
-#continueBtn:hover { background:#0c0; }
-
-#modeSelect {
-    position:absolute;
-    inset:0;
-    background:black;
-    display:flex;
-    align-items:center;
-    justify-content:center;
-    flex-direction:column;
-    z-index:30;
-}
-
-#modeSelect button {
-    margin:10px;
-    padding:15px 30px;
-    font-size:20px;
-}
-
-#joystick {
-    position:absolute;
-    bottom:120px;
-    left:50%;
-    transform:translateX(-50%);
-    width:150px;
-    height:150px;
-    border-radius:50%;
-    background:rgba(255,255,255,0.05);
-    border:2px solid #555;
-    display:none;
-}
-
-#stick {
-    position:absolute;
-    width:60px;
-    height:60px;
-    border-radius:50%;
-    background:#888;
-    left:45px;
-    top:45px;
+.node.locked{opacity:0.28;pointer-events:auto;filter:grayscale(.3)}
+.node.unlocked{border-color:var(--neon);box-shadow:0 10px 38px rgba(0,240,255,0.06)}
+.node.buyable{animation:pulse 1.2s infinite}
+@keyframes pulse{0%{box-shadow:0 0 10px rgba(0,240,255,0.03)}50%{box-shadow:0 0 28px rgba(0,240,255,0.12)}100%{box-shadow:0 0 10px rgba(0,240,255,0.03)}}
+.node .title{font-weight:800;color:#e9ffff;margin-bottom:6px}
+.node .sub{font-size:12px;color:rgba(220,255,255,0.7)}
+.node .cost{position:absolute;right:8px;top:8px;background:rgba(0,0,0,0.3);padding:4px 8px;border-radius:8px;font-weight:800;color:#ffd}
+.node .lvl{position:absolute;left:8px;top:8px;font-size:12px;color:rgba(200,255,255,0.9)}
+/* small helpers */
+.row{display:flex;gap:8px;align-items:center}
+.btn{padding:8px 12px;border-radius:10px;border:none;cursor:pointer;background:linear-gradient(90deg,var(--neon),var(--accent));color:#001;font-weight:800}
+.closeX{background:transparent;border:1px solid rgba(255,255,255,0.04);padding:8px;border-radius:10px;color:#eaffff;cursor:pointer}
+.tooltip{position:fixed;z-index:9999;padding:8px 10px;background:rgba(2,6,20,0.9);border-radius:8px;border:1px solid rgba(0,255,255,0.06);display:none}
+.smallMuted{font-size:12px;color:rgba(200,240,255,0.6)}
+/* responsive */
+@media (max-width:700px){
+  .leftCol{display:none}
+  .upgradePanel{padding:8px}
+  #joystick{width:180px;height:180px;bottom:110px}
 }
 </style>
 </head>
-
 <body>
 
-<div id="modeSelect">
-    <h1>اختر طريقة اللعب</h1>
-    <button onclick="setMode('pc')">PC</button>
-    <button onclick="setMode('mobile')">جوال</button>
+<canvas id="bg"></canvas>
+<canvas id="gameCanvas"></canvas>
+
+<!-- top -->
+<div id="topBar">
+  <div class="title">⚡ Space — Rebuilt</div>
+  <div style="display:flex;gap:8px;pointer-events:auto">
+    <button id="openTree" class="continue">🌳 شجرة التطوير</button>
+  </div>
 </div>
 
-<div id="topBar">🚀 Space Survival</div>
-
+<!-- bottom HUD -->
 <div id="bottomHUD">
-    <div>❤️ الدم: <span id="hp">20</span></div>
-    <div>💰 الفلوس: <span id="money">0</span></div>
-    <div>🚀 الصواريخ: <span id="dmg">3</span></div>
+  <div class="hudItem"><div class="label">❤ الصحة</div><div class="value" id="hpVal">20</div></div>
+  <div class="hudItem"><div class="label">💰 الفلوس</div><div class="value" id="moneyVal">0</div></div>
+  <div class="hudItem"><div class="label">🚀 ضرر</div><div class="value" id="dmgVal">3</div></div>
+  <div class="hudItem smallMuted">اضغط U لفتح الشجرة • WASD أو اللمس للحركة</div>
 </div>
 
-<button id="continueBtn" onclick="toggleUpgrades()">🌳 التطويرات</button>
-
-<div id="upgradeMenu">
-    <div id="upgradeTitle">شجرة التطويرات</div>
-    <div id="treeContainer"></div>
+<!-- mode select -->
+<div id="modeSelect">
+  <div style="text-align:center;color:#dff;font-size:20px;font-weight:800;margin-bottom:8px">اختار جهاز اللعب</div>
+  <div style="display:flex;gap:12px">
+    <button class="modeBtn" onclick="chooseMode('pc')">جهاز (ماوس)</button>
+    <button class="modeBtn" onclick="chooseMode('mobile')">جوال (لمس)</button>
+  </div>
+  <div class="smallMuted" style="margin-top:10px">بتقدر تغيره لاحقًا بضغط U ثم Settings</div>
 </div>
 
-<div id="joystick">
-    <div id="stick"></div>
+<!-- joystick for mobile -->
+<div id="joystick"><div id="stick"></div></div>
+
+<!-- upgrade overlay -->
+<div id="upgradeOverlay">
+  <div class="upgradePanel">
+    <div class="leftCol">
+      <div class="infoCard">
+        <div style="display:flex;justify-content:space-between;align-items:center">
+          <div>
+            <div style="font-weight:800">شجرة التطوير</div>
+            <div class="smallMuted">اصنع مسارك — اضغط على العقدة لشراء</div>
+          </div>
+          <div style="display:flex;flex-direction:column;gap:6px">
+            <button class="closeX" id="closeTree">إغلاق</button>
+            <button class="btn" id="resetTree">إعادة الشجرة</button>
+          </div>
+        </div>
+      </div>
+
+      <div class="infoCard">
+        <div style="font-weight:700">إحصائيات السفينه</div>
+        <div class="smallMuted" style="margin-bottom:6px">القيم الحالية</div>
+        <div class="smallMuted">🗡️ ضرر: <span id="statDmg">3</span></div>
+        <div class="smallMuted">⏱️ زمن إطلاق: <span id="statRate">2000</span> مللي</div>
+        <div class="smallMuted">🎯 عدد صواريخ: <span id="statMiss">1</span></div>
+        <div class="smallMuted">❤ الحد الأقصى للدم: <span id="statMaxHP">20</span></div>
+      </div>
+
+      <div class="infoCard">
+        <div style="font-weight:700">نصائح</div>
+        <ul style="margin:6px 0 0 18px;color:rgba(200,240,255,0.85)">
+          <li>اشترِ جذور الشجرة لفتح فروع جديدة</li>
+          <li>كلما كبرت الصخور زادت الفلوس</li>
+          <li>اضغط واسحب لتحريك الشجرة داخل الإطار</li>
+        </ul>
+      </div>
+    </div>
+
+    <div class="treeCanvasWrap">
+      <div id="treeArea" tabindex="0"></div>
+    </div>
+  </div>
 </div>
 
-<canvas id="game"></canvas>
+<div id="tooltip" class="tooltip"></div>
 
 <script>
-const canvas = document.getElementById("game");
-const ctx = canvas.getContext("2d");
-canvas.width = innerWidth;
-canvas.height = innerHeight;
+/* -------------------- basic state & persistence -------------------- */
+const SAVE_KEY = "space_pro_save_v1";
+let save = {
+  money: 0,
+  score: 0,
+  upgrades: {}
+};
+function loadSave(){ try{ const s=localStorage.getItem(SAVE_KEY); if(s) save = JSON.parse(s); }catch(e){} }
+function writeSave(){ localStorage.setItem(SAVE_KEY, JSON.stringify(save)); }
 
-let mode = null;
-function setMode(m){
-    mode = m;
-    document.getElementById("modeSelect").style.display="none";
-    if(m==="mobile") joystick.style.display="block";
+/* -------------------- canvas setup -------------------- */
+const bg = document.getElementById('bg'), g = document.getElementById('gameCanvas');
+const ctxBG = bg.getContext('2d'), ctx = g.getContext('2d');
+function resizeAll(){ bg.width = g.width = innerWidth; bg.height = g.height = innerHeight; }
+addEventListener('resize', resizeAll);
+resizeAll();
+
+/* -------------------- background stars / nebula -------------------- */
+const stars = [];
+for(let i=0;i<200;i++) stars.push({x:Math.random()*innerWidth,y:Math.random()*innerHeight,r:Math.random()*1.6, sx:Math.random()*0.3+0.1});
+function renderBG(dt){
+  // slow parallax nebula gradient
+  const t = performance.now()*0.00005;
+  ctxBG.clearRect(0,0,bg.width,bg.height);
+  const g1 = ctxBG.createLinearGradient(0,0, bg.width, bg.height);
+  g1.addColorStop(0, "#00142b"); g1.addColorStop(0.5, "#040318"); g1.addColorStop(1, "#000010");
+  ctxBG.fillStyle = g1; ctxBG.fillRect(0,0,bg.width,bg.height);
+
+  // subtle nebula blobs
+  for(let i=0;i<6;i++){
+    ctxBG.beginPath();
+    const rx = (Math.sin(t* (i+1) * 0.6 + i) + 1)/2 * bg.width;
+    const ry = (Math.cos(t*(i+1) * 0.45 + i) + 1)/2 * bg.height;
+    const rad = Math.min(bg.width,bg.height) * (0.12 + i*0.03);
+    const grad = ctxBG.createRadialGradient(rx,ry,rad*0.1, rx,ry,rad);
+    grad.addColorStop(0, `rgba(139,92,255,${0.02 + i*0.01})`);
+    grad.addColorStop(1, 'rgba(0,0,0,0)');
+    ctxBG.fillStyle = grad; ctxBG.fillRect(rx-rad,ry-rad,rad*2,rad*2);
+  }
+
+  // stars
+  for(const s of stars){
+    s.y += s.sx*0.4;
+    if(s.y > bg.height) s.y = -2;
+    ctxBG.fillStyle = `rgba(255,255,255,${0.6 + Math.sin(performance.now()*0.001 + s.x)*0.2})`;
+    ctxBG.fillRect(s.x, s.y, s.r, s.r);
+  }
 }
 
-let player = {
-    x: canvas.width/2,
-    y: canvas.height/2,
-    hp:20,
-    speed:3,
-    dmg:3
+/* -------------------- game entities -------------------- */
+let mode = null; // 'pc' or 'mobile'
+const joystick = document.getElementById('joystick'), stick = document.getElementById('stick');
+const modeSelect = document.getElementById('modeSelect');
+
+function chooseMode(m){
+  mode = m;
+  modeSelect.style.display = 'none';
+  if(mode === 'mobile'){ joystick.style.display = 'block'; }
+  loadSave(); applyUpgrades(); updateHUD();
+}
+
+/* player */
+const player = {
+  x: innerWidth/2, y: innerHeight/2, r:18,
+  vx:0, vy:0,
+  health:20, maxHealth:20,
+  damage:3, fireRate:2000, missiles:1, missileSpeed:6, speed:3
 };
 
-let money = 0;
-let rocks = [];
-let missiles = [];
-let lastShot = 0;
+/* controls */
+const keys = {};
+addEventListener('keydown', e=>{ keys[e.key.toLowerCase()] = true; if(e.key.toLowerCase()==='u') toggleTree(); });
+addEventListener('keyup', e=> keys[e.key.toLowerCase()] = false;
 
-function spawnRock(){
-    let size = Math.random()*30+20;
-    rocks.push({
-        x:Math.random()*canvas.width,
-        y:-size,
-        r:size,
-        hp:10+size/5,
-        dmg:2,
-        speed:1+Math.random()
-    });
+let touchBase = null, stickPos = {x:0,y:0}, stickActive=false;
+g.addEventListener('touchstart', e=>{
+  if(mode!=='mobile') return;
+  const t = e.touches[0];
+  touchBase = {x:t.clientX, y:t.clientY};
+  stick.style.left = (touchBase.x - (joystick.offsetLeft || 0) - 34)+'px';
+  stick.style.top = (touchBase.y - (joystick.offsetTop || 0) - 34)+'px';
+  stickActive = true;
+});
+g.addEventListener('touchmove', e=>{
+  if(mode!=='mobile' || !touchBase) return;
+  const t = e.touches[0];
+  const dx = t.clientX - touchBase.x;
+  const dy = t.clientY - touchBase.y;
+  const mag = Math.hypot(dx,dy);
+  const max = 60;
+  const nx = (mag > max) ? dx * max/mag : dx;
+  const ny = (mag > max) ? dy * max/mag : dy;
+  stick.style.transform = `translate(${nx}px, ${ny}px)`;
+  stickPos = {x:nx/ max, y: ny/ max};
+});
+g.addEventListener('touchend', e=>{ touchBase=null; stick.style.transform='translate(0,0)'; stickActive=false; stickPos={x:0,y:0}; });
+
+/* rocks & missiles & particles */
+let rocks = [], missiles = [], particles = [];
+function spawnRock(edge){
+  const size = Math.random()*36 + 10; // radius
+  let x,y;
+  const side = edge ?? Math.floor(Math.random()*4);
+  if(side===0){ x = -size-10; y = Math.random()*innerHeight; }
+  else if(side===1){ x = innerWidth + size+10; y = Math.random()*innerHeight; }
+  else if(side===2){ x = Math.random()*innerWidth; y = -size-10; }
+  else { x = Math.random()*innerWidth; y = innerHeight+size+10; }
+  rocks.push({x,y,r:size,hp: Math.ceil(size/4)*6,baseSpeed: 0.5 + Math.random()*0.8, value: Math.ceil(size/4)*6});
 }
-setInterval(spawnRock,1000);
+for(let i=0;i<10;i++) spawnRock();
 
-function shoot(){
-    let target = rocks[0];
-    if(!target) return;
-    missiles.push({
-        x:player.x,
-        y:player.y,
-        tx:target.x,
-        ty:target.y
-    });
+/* audio small */
+const audioCtx = window.AudioContext ? new AudioContext() : null;
+function playTone(freq, time=0.04, vol=0.04){
+  if(!audioCtx) return;
+  const o = audioCtx.createOscillator();
+  const g = audioCtx.createGain();
+  o.type = 'sine'; o.frequency.value = freq;
+  g.gain.value = vol;
+  o.connect(g); g.connect(audioCtx.destination);
+  o.start(); o.stop(audioCtx.currentTime + time);
 }
 
-function update(){
-    ctx.clearRect(0,0,canvas.width,canvas.height);
+/* -------------------- upgrades definitions & tree -------------------- */
+loadSave();
+const UP = {
+  damage: {name:'ضرر++', desc:'يزيد الضرر لكل صاروخ', cost:50, max:6, deps:[], apply: lvl => player.damage = 3 + lvl*2},
+  fireRate:{name:'سرعة إطلاق', desc:'يقلل الزمن بين الطلقات', cost:80, max:6, deps:['damage'], apply:lvl => player.fireRate = Math.max(320, 2000 - lvl*240)},
+  missiles:{name:'عدد الصواريخ', desc:'يزيد عدد الصواريخ لكل دورة', cost:90, max:5, deps:['damage'], apply:lvl=> player.missiles = 1 + lvl},
+  missileSpeed:{name:'سرعة الصواريخ', desc:'زيادة سرعة الصواريخ', cost:70, max:5, deps:['missiles'], apply:lvl=> player.missileSpeed = 6 + lvl*2},
+  explosion:{name:'انفجار', desc:'صاروخ يضر الصخور القريبة', cost:130, max:3, deps:['missileSpeed'], apply:lvl=> player.explosion = lvl},
+  money:{name:'زيادة الفلوس', desc:'زيادة قيمة الصخور المهدومة', cost:120, max:5, deps:['missiles'], apply:lvl=> player.moneyMul = 1 + lvl*0.18},
+  hpMax:{name:'زيادة الدم', desc:'يزيد الحد الأقصى للصحة', cost:110, max:5, deps:['fireRate'], apply:lvl=> { player.maxHealth = 20 + lvl*5; if(player.health>player.maxHealth) player.health = player.maxHealth } },
+  regen:{name:'تجدد', desc:'تجدد الصحة تدريجياً', cost:150, max:3, deps:['hpMax'], apply:lvl=> player.regen = lvl},
+  rockDensity:{name:'كثافة', desc:'تزيد معدل ظهور الصخور (تحدي)', cost:100, max:5, deps:['fireRate'], apply:lvl=> game.spawnInterval = Math.max(350, game.baseSpawn - lvl*100) },
+  rockSpeed:{name:'سرعة الصخور', desc:'تزيد سرعة الصخور', cost:90, max:5, deps:['rockDensity'], apply:lvl=> game.rockBase = 0.5 + lvl*0.2},
+  homing:{name:'تتبع', desc:'تحسن تتبع الصواريخ', cost:130, max:3, deps:['missiles'], apply:lvl=> player.homing = lvl},
+  shield:{name:'درع', desc:'درع يمتص الضرر مؤقتاً', cost:180, max:3, deps:['hpMax'], apply:lvl=> player.shieldMax = lvl*8},
+  split:{name:'تشظي', desc:'ينقسم الصاروخ لشظايا', cost:160, max:3, deps:['explosion'], apply:lvl=> player.split = lvl},
+  speed:{name:'سرعة السفينة', desc:'تزيد سرعة الحركة', cost:90, max:4, deps:[], apply:lvl=> player.speed = 3 + lvl*0.9}
+};
+/* apply saved levels defaults */
+for(const id in UP) if(!save.upgrades[id]) save.upgrades[id]=0;
 
-    // خلفية نجوم
-    ctx.fillStyle="black";
-    ctx.fillRect(0,0,canvas.width,canvas.height);
+/* apply all upgrades to player */
+function applyUpgrades(){
+  // base reset
+  player.damage = 3; player.fireRate = 2000; player.missiles = 1; player.missileSpeed = 6; player.moneyMul = 1; player.regen = 0; player.shieldMax = 0; player.explosion = 0; player.homing = 0; player.split = 0; player.speed = 3; player.maxHealth = 20;
+  for(const id in UP){
+    const lvl = save.upgrades[id] || 0;
+    if(typeof UP[id].apply === 'function') UP[id].apply(lvl);
+  }
+  player.health = Math.min(player.health || player.maxHealth, player.maxHealth);
+}
 
-    // حركة PC
-    if(mode==="pc"){
-        canvas.onmousemove = e=>{
-            player.x += (e.clientX-player.x)*0.05;
-            player.y += (e.clientY-player.y)*0.05;
+/* game config */
+const game = { paused:false, baseSpawn: 1200, spawnInterval:1200, rockBase:0.5, lastSpawn:performance.now(), lastFire:performance.now(), passiveTick:performance.now() };
+
+/* -------------------- HUD update -------------------- */
+const hpVal = document.getElementById('hpVal'), moneyVal = document.getElementById('moneyVal'), dmgVal = document.getElementById('dmgVal');
+function updateHUD(){ hpVal.textContent = Math.max(0, Math.floor(player.health)); moneyVal.textContent = Math.floor(save.money); dmgVal.textContent = player.damage; }
+
+/* -------------------- movement & firing -------------------- */
+let mouse = {x:player.x,y:player.y};
+g.addEventListener('mousemove', e=> { if(mode==='pc'){ mouse.x = e.clientX; mouse.y = e.clientY; }});
+/* smooth follow: player moves toward mouse slowly */
+function updatePlayer(dt){
+  if(mode==='pc'){
+    // follow mouse smoothly
+    const dx = mouse.x - player.x, dy = mouse.y - player.y;
+    player.x += dx * 0.06; player.y += dy * 0.06;
+  } else if(mode==='mobile'){
+    // joystick stickPos from touch (normalized)
+    const nx = stickPos.x || 0, ny = stickPos.y || 0;
+    player.x += nx * player.speed * 3;
+    player.y += ny * player.speed * 3;
+  } else {
+    // keyboard WASD fallback
+    let ax=0,ay=0; if(keys['w']) ay-=1; if(keys['s']) ay+=1; if(keys['a']) ax-=1; if(keys['d']) ax+=1;
+    const mag = Math.hypot(ax,ay) || 1;
+    player.x += (ax/mag) * player.speed * 2; player.y += (ay/mag) * player.speed * 2;
+  }
+  // clamp
+  player.x = Math.max(0, Math.min(innerWidth, player.x));
+  player.y = Math.max(0, Math.min(innerHeight, player.y));
+}
+
+/* firing auto */
+function autoFire(now){
+  if(now - game.lastFire < (player.fireRate || 2000)) return;
+  game.lastFire = now;
+  const count = (player.missiles || 1);
+  for(let i=0;i<count;i++){
+    if(rocks.length===0) continue;
+    // choose nearest with slight randomness
+    let target = rocks.reduce((a,b)=> (Math.hypot(a.x-player.x,a.y-player.y) < Math.hypot(b.x-player.x,b.y-player.y) ? a : b));
+    if(Math.random() < 0.2 && rocks.length>2) target = rocks[Math.floor(Math.random()*rocks.length)];
+    const angle = Math.atan2((target.y - player.y) + (Math.random()-0.5)*40, (target.x - player.x) + (Math.random()-0.5)*40);
+    const vx = Math.cos(angle)*(player.missileSpeed||6), vy = Math.sin(angle)*(player.missileSpeed||6);
+    missiles.push({x:player.x + Math.cos(angle)*player.r, y:player.y + Math.sin(angle)*player.r, vx, vy, target, pierce:player.pierce||0, hits:player.multiHit||0});
+  }
+  playTone(780, 0.02, 0.02);
+}
+
+/* -------------------- collisions, wrap, destroy -------------------- */
+function destroyRock(i){
+  const r = rocks[i];
+  if(!r) return;
+  const reward = Math.ceil(r.value * (player.moneyMul || 1));
+  save.money += reward; save.score += Math.ceil(r.r/2);
+  // particles
+  for(let p=0;p<18;p++) particles.push({x:r.x,y:r.y,vx:(Math.random()-0.5)*6,vy:(Math.random()-0.5)*6,life:24,col:'#ffd4a3'});
+  // spawn fragments
+  if(r.r > 20){
+    const parts = Math.min(3, Math.floor(r.r/14));
+    for(let k=0;k<parts;k++) rocks.push({x:r.x + (Math.random()-0.5)*20, y:r.y + (Math.random()-0.5)*20, r: r.r*(0.45+Math.random()*0.2), hp: Math.ceil(r.r*0.5), baseSpeed: 0.3 + Math.random()*0.6, value: Math.ceil(r.r*0.4/3)*6});
+  }
+  rocks.splice(i,1);
+  setTimeout(()=> spawnRock(Math.floor(Math.random()*4)), 600 + Math.random()*900);
+  writeSave(); updateHUD();
+  playTone(260,0.02,0.06);
+}
+
+/* -------------------- spawn loop -------------------- */
+function spawnIfNeeded(now){
+  if(now - game.lastSpawn > game.spawnInterval){
+    game.lastSpawn = now;
+    spawnRock(Math.floor(Math.random()*4));
+  }
+}
+
+/* -------------------- rendering -------------------- */
+function renderGame(dt, now){
+  ctx.clearRect(0,0,g.width,g.height);
+  // stars/nebula were on bg
+  // draw rocks
+  for(const r of rocks){
+    // shadow gradient
+    const grad = ctx.createRadialGradient(r.x - r.r*0.3, r.y - r.r*0.3, r.r*0.1, r.x, r.y, r.r);
+    grad.addColorStop(0, '#d0d0d0'); grad.addColorStop(0.6, '#9a9a9a'); grad.addColorStop(1, '#454545');
+    ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, Math.PI*2); ctx.fill();
+    // cracks
+    ctx.strokeStyle = 'rgba(0,0,0,0.25)'; ctx.lineWidth = 1.5; ctx.beginPath();
+    ctx.moveTo(r.x - r.r*0.5, r.y - r.r*0.2); ctx.lineTo(r.x + r.r*0.2, r.y + r.r*0.6); ctx.stroke();
+    // hp bar
+    const maxHp = Math.ceil(r.r/4)*6;
+    ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(r.x - r.r, r.y - r.r - 8, r.r*2, 6);
+    ctx.fillStyle = '#ff6b6b'; ctx.fillRect(r.x - r.r, r.y - r.r - 8, (r.hp / maxHp) * r.r*2, 6);
+  }
+
+  // missiles
+  for(const m of missiles){
+    // trail
+    ctx.fillStyle = 'rgba(255,160,120,0.85)'; ctx.beginPath(); ctx.arc(m.x, m.y, 4, 0, Math.PI*2); ctx.fill();
+  }
+
+  // player (stylized)
+  ctx.save(); ctx.translate(player.x, player.y);
+  // glow
+  ctx.beginPath(); ctx.fillStyle = 'rgba(0,240,255,0.06)'; ctx.arc(0,0,player.r+20,0,Math.PI*2); ctx.fill();
+  // body
+  ctx.beginPath(); ctx.fillStyle = '#a6fff7'; ctx.moveTo(player.r,0); ctx.lineTo(-player.r*0.7, -player.r*0.9); ctx.lineTo(-player.r*0.7, player.r*0.9); ctx.closePath(); ctx.fill();
+  // cockpit
+  ctx.beginPath(); ctx.fillStyle = '#012'; ctx.arc(-player.r*0.25,0,player.r*0.42,0,Math.PI*2); ctx.fill();
+  // shield ring if any
+  if(player.shield > 0){
+    ctx.beginPath(); ctx.strokeStyle = 'rgba(120,240,255,0.6)'; ctx.lineWidth = 4; ctx.arc(0,0,player.r+10,0,Math.PI*2); ctx.stroke();
+  }
+  ctx.restore();
+
+  // particles
+  for(let i=particles.length-1;i>=0;i--){
+    const p = particles[i];
+    ctx.fillStyle = p.col; ctx.fillRect(p.x, p.y, 2,2);
+    p.x += p.vx; p.y += p.vy; p.vx *= 0.98; p.vy *= 0.98; p.life--;
+    if(p.life<=0) particles.splice(i,1);
+  }
+}
+
+/* -------------------- update loop -------------------- */
+let last = performance.now();
+function loop(now){
+  const dt = now - last;
+  renderBG(dt);
+  if(!game.paused){
+    updatePlayer(dt);
+    // rocks behavior
+    for(let i=rocks.length-1;i>=0;i--){
+      const r = rocks[i];
+      const dx = player.x - r.x, dy = player.y - r.y;
+      const d = Math.hypot(dx,dy) || 1;
+      const speed = (game.rockBase + r.r/120) * (1 + ((save.upgrades.rockSpeed||0)*0.05));
+      r.x += (dx/d) * speed * (dt/16);
+      r.y += (dy/d) * speed * (dt/16);
+      // wrap edges
+      if(r.x < -r.r - 30) r.x = innerWidth + r.r + 10;
+      if(r.x > innerWidth + r.r + 30) r.x = -r.r - 10;
+      if(r.y < -r.r - 30) r.y = innerHeight + r.r + 10;
+      if(r.y > innerHeight + r.r + 30) r.y = -r.r - 10;
+      // contact damage
+      const dist = Math.hypot(r.x-player.x, r.y-player.y);
+      if(dist < r.r + player.r){
+        let dmg = 2;
+        if(player.shield && player.shield > 0){
+          const take = Math.min(player.shield, dmg); player.shield -= take; dmg -= take;
         }
+        player.health -= dmg;
+        // knockback
+        r.x += (r.x - player.x)/dist * 18; r.y += (r.y - player.y)/dist * 18;
+        for(let k=0;k<8;k++) particles.push({x:player.x + (Math.random()-0.5)*20, y:player.y + (Math.random()-0.5)*20, vx:(Math.random()-0.5)*3, vy:(Math.random()-0.5)*3, life:12, col:'#ff9d9d'});
+        playTone(220,0.02,0.03);
+        if(Math.random() < 0.08) destroyRock(i);
+      }
+      if(r.hp <= 0) destroyRock(i);
     }
 
-    // رسم اللاعب
-    ctx.fillStyle="cyan";
-    ctx.beginPath();
-    ctx.arc(player.x,player.y,15,0,Math.PI*2);
-    ctx.fill();
-
-    // صواريخ
-    if(Date.now()-lastShot>2000){
-        shoot();
-        lastShot=Date.now();
-    }
-
-    missiles.forEach(m=>{
-        m.x+=(m.tx-m.x)*0.1;
-        m.y+=(m.ty-m.y)*0.1;
-        ctx.fillStyle="orange";
-        ctx.fillRect(m.x-3,m.y-3,6,6);
-    });
-
-    // صخور
-    rocks.forEach((r,i)=>{
-        r.y+=r.speed;
-        if(r.y>canvas.height+r.r){
-            r.y=-r.r;
-            r.x=Math.random()*canvas.width;
-        }
-        ctx.fillStyle="#666";
-        ctx.beginPath();
-        ctx.arc(r.x,r.y,r.r,0,Math.PI*2);
-        ctx.fill();
-
-        // تصادم
-        let dx=player.x-r.x;
-        let dy=player.y-r.y;
-        if(Math.hypot(dx,dy)<r.r+15){
-            player.hp-=r.dmg;
-        }
-
-        missiles.forEach((m,mi)=>{
-            if(Math.hypot(m.x-r.x,m.y-r.y)<r.r){
-                r.hp-=player.dmg;
-                missiles.splice(mi,1);
-                if(r.hp<=0){
-                    money+=Math.floor(r.r);
-                    rocks.splice(i,1);
-                }
+    // missiles physics
+    for(let i=missiles.length-1;i>=0;i--){
+      const m = missiles[i];
+      if(m.target && rocks.includes(m.target)){
+        const tx = m.target.x, ty = m.target.y;
+        const dx = tx - m.x, dy = ty - m.y;
+        const d = Math.hypot(dx,dy) || 1;
+        const homing = 0.9 + ( (player.homing||0) * 0.07 );
+        m.vx = (m.vx * (1-homing)) + (dx/d) * player.missileSpeed * homing;
+        m.vy = (m.vy * (1-homing)) + (dy/d) * player.missileSpeed * homing;
+      }
+      m.x += m.vx; m.y += m.vy;
+      // wrap missiles
+      if(m.x < -30) m.x = innerWidth + 30;
+      if(m.x > innerWidth + 30) m.x = -30;
+      if(m.y < -30) m.y = innerHeight + 30;
+      if(m.y > innerHeight + 30) m.y = -30;
+      // collision with rocks
+      for(let j=rocks.length-1;j>=0;j--){
+        const r = rocks[j];
+        if(Math.hypot(r.x - m.x, r.y - m.y) < r.r + 6){
+          const crit = Math.random() < (player.crit||0);
+          const baseD = player.damage;
+          const dmg = baseD * (crit ? 2 : 1);
+          r.hp -= dmg;
+          for(let p=0;p<12;p++) particles.push({x:m.x,y:m.y,vx:(Math.random()-0.5)*4,vy:(Math.random()-0.5)*4,life:18,col: crit ? '#ffd46a' : '#ffb2b2'});
+          playTone(540,0.02,0.03);
+          // explosion area
+          if(player.explosion){
+            const rad = 30 * player.explosion;
+            for(let rr=rocks.length-1; rr>=0; rr--){
+              if(rr!==j){
+                const dd = Math.hypot(rocks[rr].x - m.x, rocks[rr].y - m.y);
+                if(dd < rad) rocks[rr].hp -= Math.ceil(dmg*0.5);
+              }
             }
-        });
+          }
+          missiles.splice(i,1);
+          break;
+        }
+      }
+    }
+
+    // particles update
+    for(let i=particles.length-1;i>=0;i--){
+      const p = particles[i];
+      p.x += p.vx; p.y += p.vy; p.vx *= 0.98; p.vy *= 0.98; p.life--;
+      if(p.life<=0) particles.splice(i,1);
+    }
+
+    // passive regen
+    if(player.regen && now - game.passiveTick > 2000){
+      player.health = Math.min(player.maxHealth, player.health + player.regen);
+      game.passiveTick = now;
+    }
+
+    // spawn & auto-fire
+    spawnIfNeeded(now);
+    autoFire(now);
+
+    // death
+    if(player.health <= 0){
+      game.paused = true;
+      // open upgrade automatically on death
+      openTree();
+    }
+  }
+
+  renderGame(dt, now);
+  updateHUD();
+  last = now;
+  requestAnimationFrame(loop);
+}
+requestAnimationFrame(loop);
+
+/* -------------------- upgrade UI rendering & behavior -------------------- */
+const openTreeBtn = document.getElementById('openTree'), upgradeOverlay = document.getElementById('upgradeOverlay'), closeTree = document.getElementById('closeTree'), treeArea = document.getElementById('treeArea'), tooltip = document.getElementById('tooltip'), resetTree = document.getElementById('resetTree');
+
+openTreeBtn.addEventListener('click', openTree);
+closeTree.addEventListener('click', closeTree);
+resetTree.addEventListener('click', ()=>{
+  if(confirm('إعادة تعيين كل التحديثات؟')){ for(const k in save.upgrades) save.upgrades[k]=0; save.money=0; save.score=0; applyUpgrades(); writeSave(); renderTree(); updateHUD(); }
+});
+
+function openTree(){ upgradeOverlay.style.display='flex'; game.paused = true; renderTree(); }
+function closeTree(){ upgradeOverlay.style.display='none'; game.paused = false; writeSave(); }
+
+/* tree layout */
+const layout = [
+  {id:'damage', x:100, y:80},
+  {id:'fireRate', x:340, y:180},
+  {id:'missiles', x:580, y:180},
+  {id:'missileSpeed', x:580, y:320},
+  {id:'explosion', x:820, y:420},
+  {id:'split', x:980, y:540},
+  {id:'money', x:420, y:360},
+  {id:'hpMax', x:140, y:320},
+  {id:'regen', x:140, y:460},
+  {id:'rockDensity', x:520, y:520},
+  {id:'rockSpeed', x:700, y:620},
+  {id:'homing', x:860, y:320},
+  {id:'shield', x:40, y:620},
+  {id:'speed', x:40, y:820}
+];
+
+/* draw nodes inside treeArea then draw SVG connections */
+function isUnlockedNode(id){
+  const def = UP[id];
+  if(!def) return false;
+  if(def.deps.length === 0) return true;
+  return def.deps.some(d => (save.upgrades[d] && save.upgrades[d] > 0));
+}
+
+function renderTree(){
+  treeArea.innerHTML = '';
+  // svg for lines
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
+  svg.setAttribute('width','100%'); svg.setAttribute('height','100%'); svg.style.position='absolute'; svg.style.left='0'; svg.style.top='0';
+  treeArea.appendChild(svg);
+  // container for nodes
+  const cont = document.createElement('div'); cont.style.position='absolute'; cont.style.left='0'; cont.style.top='0'; cont.style.width='2200px'; cont.style.height='1600px';
+  treeArea.appendChild(cont);
+
+  const pos = {};
+  layout.forEach(n=>{
+    pos[n.id] = {x: n.x + 90, y: n.y + 30}; // center
+  });
+
+  // draw connections
+  layout.forEach(node=>{
+    const def = UP[node.id];
+    if(!def) return;
+    def.deps.forEach(dep=>{
+      if(!pos[dep]) return;
+      const p1 = pos[dep], p2 = pos[node.id];
+      const path = document.createElementNS('http://www.w3.org/2000/svg','path');
+      const mx = (p1.x + p2.x)/2;
+      const d = `M ${p1.x} ${p1.y} C ${mx} ${p1.y-70}, ${mx} ${p2.y+70}, ${p2.x} ${p2.y}`;
+      path.setAttribute('d', d);
+      const color = (save.upgrades[dep] && save.upgrades[dep] > 0) ? 'rgba(0,240,255,0.95)' : 'rgba(255,255,255,0.06)';
+      path.setAttribute('stroke', color); path.setAttribute('stroke-width','3'); path.setAttribute('fill','none');
+      svg.appendChild(path);
+    });
+  });
+
+  // draw nodes
+  layout.forEach(node=>{
+    const def = UP[node.id];
+    if(!def) return;
+    const el = document.createElement('div'); el.className='node';
+    el.style.left = node.x + 'px'; el.style.top = node.y + 'px';
+    const lvl = save.upgrades[node.id] || 0;
+    el.innerHTML = `<div class="lvl">Lv.${lvl}/${def.max}</div><div class="title">${def.name}</div><div class="sub">${def.desc}</div><div class="cost">${def.cost}💠</div>`;
+    // classes
+    if(lvl >= def.max) el.classList.add('locked');
+    else if(isUnlockedNode(node.id) && save.money >= def.cost) el.classList.add('buyable');
+    else if(isUnlockedNode(node.id)) el.classList.add('unlocked');
+    else el.classList.add('locked');
+
+    // hover tooltip
+    el.addEventListener('mouseenter', (ev)=>{ tooltip.style.left = (ev.clientX+12)+'px'; tooltip.style.top = (ev.clientY+12)+'px'; tooltip.style.display='block'; tooltip.innerHTML = `<strong>${def.name}</strong><br>${def.desc}<br>تكلفة: ${def.cost} • الحد: ${def.max} • المستوى: ${lvl}`; });
+    el.addEventListener('mousemove', (ev)=>{ tooltip.style.left = (ev.clientX+12)+'px'; tooltip.style.top = (ev.clientY+12)+'px'; });
+    el.addEventListener('mouseleave', ()=>{ tooltip.style.display='none'; });
+
+    el.addEventListener('click', ()=>{
+      // buy action
+      if(save.upgrades[node.id] >= def.max){ alert('وصلت الحد الأقصى'); return; }
+      if(!isUnlockedNode(node.id)){ alert('هذه العقدة مقفلة'); return; }
+      if(save.money < def.cost){ alert('فلوسك قليلة'); return; }
+      // buy
+      save.money -= def.cost;
+      save.upgrades[node.id] = (save.upgrades[node.id]||0) + 1;
+      // increase cost a bit for next level
+      UP[node.id].cost = Math.ceil(def.cost * 1.28);
+      applyUpgrades(); writeSave(); renderTree(); updateHUD();
+      playTone(980,0.04,0.05);
     });
 
-    document.getElementById("hp").textContent=player.hp;
-    document.getElementById("money").textContent=money;
-    document.getElementById("dmg").textContent=player.dmg;
+    cont.appendChild(el);
+  });
 
-    requestAnimationFrame(update);
+  // enable dragging the treeArea container by mouse
+  let dragging=false, sx=0, sy=0, ox=0, oy=0;
+  treeArea.onmousedown = (e)=>{ dragging=true; sx=e.clientX; sy=e.clientY; const left = parseInt(getComputedStyle(treeArea).left||0); const top = parseInt(getComputedStyle(treeArea).top||0); ox = left; oy = top; treeArea.style.cursor='grabbing'; }
+  window.addEventListener('mousemove', (e)=>{ if(!dragging) return; const dx = e.clientX - sx; const dy = e.clientY - sy; treeArea.style.left = (ox + dx) + 'px'; treeArea.style.top = (oy + dy) + 'px'; });
+  window.addEventListener('mouseup', ()=>{ dragging=false; treeArea.style.cursor='grab'; });
+  // make treeArea initially centered
+  treeArea.style.left = Math.max(0, (innerWidth - 1200)/2) + 'px';
+  treeArea.style.top = Math.max(0, (innerHeight - 800)/2) + 'px';
 }
-update();
 
-// شجرة تطويرات
-const tree=document.getElementById("treeContainer");
-let upgrades=[];
-function addUpgrade(x,y,text,cost,apply){
-    let d=document.createElement("div");
-    d.className="upgrade locked";
-    d.style.left=x+"px";
-    d.style.top=y+"px";
-    d.innerHTML=text+"<br>💰"+cost;
-    d.onclick=()=>{
-        if(money>=cost){
-            money-=cost;
-            d.classList.remove("locked");
-            d.classList.add("unlocked");
-            apply();
-        }
-    };
-    tree.appendChild(d);
-}
-addUpgrade(900,200,"زيادة الضرر",50,()=>player.dmg+=1);
-addUpgrade(700,400,"سرعة صواريخ",80,()=>{});
-addUpgrade(1100,400,"دم إضافي",100,()=>player.hp+=10);
+/* -------------------- helper: toggle tree -------------------- */
+function toggleTree(){ if(upgradeOverlay.style.display === 'flex') closeTree(); else openTree(); }
 
-function toggleUpgrades(){
-    let u=document.getElementById("upgradeMenu");
-    u.style.display = u.style.display==="block"?"none":"block";
-}
+/* -------------------- initial apply upgrades & HUD -------------------- */
+applyUpgrades(); updateHUD();
+
+/* -------------------- keyboard quick actions -------------------- */
+addEventListener('keydown', e=>{ if(e.key==='p') game.paused = !game.paused; });
+
+/* -------------------- mobile stick position normalized placeholder -------------------- */
+let stickPos = {x:0,y:0};
+
+/* -------------------- spawn repeating rocks -------------------- */
+setInterval(()=>{ if(!game.paused) spawnRock(Math.floor(Math.random()*4)); }, 1100);
+
+/* -------------------- save periodically -------------------- */
+setInterval(()=> writeSave(), 5000);
+
+/* -------------------- end */
 </script>
-
 </body>
 </html>
