@@ -1,347 +1,325 @@
 <!DOCTYPE html>
-<html lang="en">
+<html lang="ar">
 <head>
 <meta charset="UTF-8">
+<title>Space Survival</title>
 <meta name="viewport" content="width=device-width, initial-scale=1.0, user-scalable=no">
-<title>RainWater - Pixel Defense</title>
-
-<!-- FIXED GOOGLE FONT -->
-<link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Press+Start+2P&display=swap">
 
 <style>
-*{
-margin:0;
-padding:0;
-box-sizing:border-box;
--webkit-tap-highlight-color:transparent;
+html,body {
+    margin:0;
+    padding:0;
+    overflow:hidden;
+    background:black;
+    font-family:Arial, sans-serif;
+    color:white;
 }
 
-html,body{
-width:100%;
-height:100%;
-overflow:hidden;
-touch-action:none;
-font-family:'Press Start 2P', cursive;
-
-/* 👉 CHANGE BACKGROUND IMAGE HERE */
-background-image:url('https://raw.githubusercontent.com/USERNAME/REPO/main/bg.png');
-background-size:cover;
-background-position:center;
-background-attachment:fixed;
+canvas {
+    position:absolute;
+    top:0;
+    left:0;
 }
 
-#gameCanvas{
-display:block;
-image-rendering:pixelated;
+#topBar {
+    position:absolute;
+    top:0;
+    width:100%;
+    text-align:center;
+    background:rgba(0,0,0,0.6);
+    padding:8px;
+    font-size:18px;
+    z-index:10;
 }
 
-/* MENUS */
-.menu-screen{
-position:fixed;
-inset:0;
-background:rgba(0,0,0,.95);
-display:flex;
-flex-direction:column;
-justify-content:center;
-align-items:center;
-z-index:1000;
+#bottomHUD {
+    position:absolute;
+    bottom:0;
+    width:100%;
+    background:rgba(0,0,0,0.7);
+    display:flex;
+    justify-content:space-around;
+    padding:10px;
+    font-size:14px;
+    z-index:10;
 }
 
-.menu-title{
-font-size:42px;
-color:#4af;
-text-shadow:4px 4px 0 #048,0 0 20px #4af;
-margin-bottom:50px;
-animation:pulse 2s infinite;
+#upgradeMenu {
+    position:absolute;
+    inset:0;
+    background:rgba(0,0,0,0.95);
+    display:none;
+    z-index:20;
 }
 
-@keyframes pulse{
-0%,100%{transform:scale(1)}
-50%{transform:scale(1.05)}
+#upgradeTitle {
+    text-align:center;
+    font-size:24px;
+    margin:10px;
 }
 
-.menu-button{
-background:linear-gradient(180deg,#4af,#048);
-color:#fff;
-border:4px solid #fff;
-padding:18px 45px;
-margin:12px;
-font-size:18px;
-cursor:pointer;
-box-shadow:0 8px 0 #024;
+#treeContainer {
+    width:2000px;
+    height:2000px;
+    position:absolute;
+    background:radial-gradient(#111,#000);
+    cursor:grab;
 }
 
-.menu-button:active{
-transform:translateY(4px);
-box-shadow:0 4px 0 #024;
+.upgrade {
+    position:absolute;
+    width:140px;
+    height:60px;
+    background:linear-gradient(135deg,#333,#111);
+    border:2px solid #555;
+    border-radius:10px;
+    text-align:center;
+    padding:5px;
+    font-size:12px;
 }
 
-/* HUD */
-#hud{
-position:fixed;
-top:15px;
-left:15px;
-color:#fff;
-font-size:12px;
-z-index:10;
-text-shadow:2px 2px #000;
-display:none;
+.upgrade.locked {
+    opacity:0.3;
 }
 
-#shopCorner{
-position:fixed;
-bottom:15px;
-right:15px;
-background:rgba(0,0,0,.8);
-border:3px solid #4af;
-padding:10px;
-color:#fd0;
-cursor:pointer;
-display:none;
+.upgrade.unlocked {
+    border-color:#0f0;
 }
 
-#upgradeShop{
-position:fixed;
-inset:0;
-background:rgba(0,0,0,.95);
-display:none;
-overflow:auto;
-z-index:999;
-padding:20px;
+#continueBtn {
+    position:absolute;
+    top:10px;
+    right:10px;
+    padding:10px 15px;
+    background:#0a0;
+    border:none;
+    border-radius:8px;
+    cursor:pointer;
+}
+#continueBtn:hover { background:#0c0; }
+
+#modeSelect {
+    position:absolute;
+    inset:0;
+    background:black;
+    display:flex;
+    align-items:center;
+    justify-content:center;
+    flex-direction:column;
+    z-index:30;
 }
 
-.shop-header{
-text-align:center;
-color:#4af;
-font-size:26px;
-margin-bottom:20px;
+#modeSelect button {
+    margin:10px;
+    padding:15px 30px;
+    font-size:20px;
 }
 
-.upgrades-container{
-display:grid;
-grid-template-columns:repeat(auto-fit,minmax(240px,1fr));
-gap:15px;
+#joystick {
+    position:absolute;
+    bottom:120px;
+    left:50%;
+    transform:translateX(-50%);
+    width:150px;
+    height:150px;
+    border-radius:50%;
+    background:rgba(255,255,255,0.05);
+    border:2px solid #555;
+    display:none;
 }
 
-.upgrade-box{
-border:3px solid #4af;
-padding:12px;
-cursor:pointer;
-background:#0a1a2a;
-}
-
-.upgrade-details{display:none;font-size:10px}
-
-.upgrade-box.expanded .upgrade-details{display:block}
-
-.buy-button{
-margin-top:8px;
-width:100%;
-padding:8px;
-font-size:10px;
-cursor:pointer;
-}
-
-.close-shop{
-position:fixed;
-bottom:20px;
-left:50%;
-transform:translateX(-50%);
-padding:12px 35px;
-background:#f44;
-border:4px solid #fff;
-cursor:pointer;
+#stick {
+    position:absolute;
+    width:60px;
+    height:60px;
+    border-radius:50%;
+    background:#888;
+    left:45px;
+    top:45px;
 }
 </style>
 </head>
 
 <body>
-<canvas id="gameCanvas"></canvas>
 
-<div id="mainMenu" class="menu-screen">
-<div class="menu-title">RainWater</div>
-<button class="menu-button" onclick="startGame()">PLAY</button>
+<div id="modeSelect">
+    <h1>اختر طريقة اللعب</h1>
+    <button onclick="setMode('pc')">PC</button>
+    <button onclick="setMode('mobile')">جوال</button>
 </div>
 
-<div id="hud">
-<div>HP: <span id="hpDisplay">20</span></div>
-<div>TIME: <span id="timeDisplay">0:00</span></div>
-<div>KILLS: <span id="killsDisplay">0</span></div>
+<div id="topBar">🚀 Space Survival</div>
+
+<div id="bottomHUD">
+    <div>❤️ الدم: <span id="hp">20</span></div>
+    <div>💰 الفلوس: <span id="money">0</span></div>
+    <div>🚀 الصواريخ: <span id="dmg">3</span></div>
 </div>
 
-<div id="shopCorner" onclick="openShop()">💰 <span id="coinsCorner">0</span></div>
+<button id="continueBtn" onclick="toggleUpgrades()">🌳 التطويرات</button>
 
-<div id="upgradeShop">
-<div class="shop-header">UPGRADE SHOP</div>
-<div class="upgrades-container" id="upgradesGrid"></div>
-<button class="close-shop" onclick="closeShop()">CLOSE</button>
+<div id="upgradeMenu">
+    <div id="upgradeTitle">شجرة التطويرات</div>
+    <div id="treeContainer"></div>
 </div>
+
+<div id="joystick">
+    <div id="stick"></div>
+</div>
+
+<canvas id="game"></canvas>
 
 <script>
-/* ===== AUDIO FIX ===== */
-let audioCtx;
-function initAudio(){
-if(!audioCtx){
-audioCtx=new(window.AudioContext||window.webkitAudioContext)();
-}
-}
-document.addEventListener('mousedown',initAudio,{once:true});
-document.addEventListener('touchstart',initAudio,{once:true});
+const canvas = document.getElementById("game");
+const ctx = canvas.getContext("2d");
+canvas.width = innerWidth;
+canvas.height = innerHeight;
 
-/* ===== CANVAS ===== */
-const canvas=document.getElementById('gameCanvas');
-const ctx=canvas.getContext('2d');
-
-function resize(){
-canvas.width=innerWidth;
-canvas.height=innerHeight;
-}
-resize();
-addEventListener('resize',resize);
-
-/* ===== GAME STATE ===== */
-let gameRunning=false;
-let hp=20,maxHP=20,coins=0,kills=0,startTime=0;
-
-/* PLAYER */
-let mouseX=canvas.width/2;
-let mouseY=canvas.height/2;
-let shieldRadius=30;
-
-/* INPUT */
-function move(e){
-if(e.touches){
-mouseX=e.touches[0].clientX;
-mouseY=e.touches[0].clientY;
-}else{
-mouseX=e.clientX;
-mouseY=e.clientY;
-}
-}
-canvas.addEventListener('mousemove',move);
-canvas.addEventListener('touchmove',e=>{e.preventDefault();move(e)});
-
-/* RAIN */
-const rain=[];
-for(let i=0;i<200;i++)rain.push({active:false});
-
-function spawnRain(){
-if(Math.random()<0.02){
-const d=rain.find(r=>!r.active);
-if(d){
-d.x=Math.random()*canvas.width;
-d.y=80;
-d.active=true;
-}
-}
+let mode = null;
+function setMode(m){
+    mode = m;
+    document.getElementById("modeSelect").style.display="none";
+    if(m==="mobile") joystick.style.display="block";
 }
 
-function updateRain(){
-for(const d of rain){
-if(!d.active)continue;
-d.y+=3;
+let player = {
+    x: canvas.width/2,
+    y: canvas.height/2,
+    hp:20,
+    speed:3,
+    dmg:3
+};
 
-if(Math.hypot(d.x-mouseX,d.y-mouseY)<shieldRadius){
-coins+=5;
-kills++;
-d.active=false;
+let money = 0;
+let rocks = [];
+let missiles = [];
+let lastShot = 0;
+
+function spawnRock(){
+    let size = Math.random()*30+20;
+    rocks.push({
+        x:Math.random()*canvas.width,
+        y:-size,
+        r:size,
+        hp:10+size/5,
+        dmg:2,
+        speed:1+Math.random()
+    });
+}
+setInterval(spawnRock,1000);
+
+function shoot(){
+    let target = rocks[0];
+    if(!target) return;
+    missiles.push({
+        x:player.x,
+        y:player.y,
+        tx:target.x,
+        ty:target.y
+    });
 }
 
-if(d.y>canvas.height-60){
-hp--;
-d.active=false;
-if(hp<=0)endGame();
-}
-}
-}
+function update(){
+    ctx.clearRect(0,0,canvas.width,canvas.height);
 
-/* DRAW */
-function draw(){
-ctx.clearRect(0,0,canvas.width,canvas.height);
+    // خلفية نجوم
+    ctx.fillStyle="black";
+    ctx.fillRect(0,0,canvas.width,canvas.height);
 
-/* LINES */
-ctx.strokeStyle='#4af';
-ctx.lineWidth=3;
-ctx.beginPath();
-ctx.moveTo(0,80);
-ctx.lineTo(canvas.width,80);
-ctx.stroke();
+    // حركة PC
+    if(mode==="pc"){
+        canvas.onmousemove = e=>{
+            player.x += (e.clientX-player.x)*0.05;
+            player.y += (e.clientY-player.y)*0.05;
+        }
+    }
 
-ctx.strokeStyle='#f44';
-ctx.beginPath();
-ctx.moveTo(0,canvas.height-60);
-ctx.lineTo(canvas.width,canvas.height-60);
-ctx.stroke();
+    // رسم اللاعب
+    ctx.fillStyle="cyan";
+    ctx.beginPath();
+    ctx.arc(player.x,player.y,15,0,Math.PI*2);
+    ctx.fill();
 
-/* RAIN */
-ctx.fillStyle='#4af';
-for(const d of rain){
-if(d.active)ctx.fillRect(d.x-3,d.y-3,6,6);
+    // صواريخ
+    if(Date.now()-lastShot>2000){
+        shoot();
+        lastShot=Date.now();
+    }
+
+    missiles.forEach(m=>{
+        m.x+=(m.tx-m.x)*0.1;
+        m.y+=(m.ty-m.y)*0.1;
+        ctx.fillStyle="orange";
+        ctx.fillRect(m.x-3,m.y-3,6,6);
+    });
+
+    // صخور
+    rocks.forEach((r,i)=>{
+        r.y+=r.speed;
+        if(r.y>canvas.height+r.r){
+            r.y=-r.r;
+            r.x=Math.random()*canvas.width;
+        }
+        ctx.fillStyle="#666";
+        ctx.beginPath();
+        ctx.arc(r.x,r.y,r.r,0,Math.PI*2);
+        ctx.fill();
+
+        // تصادم
+        let dx=player.x-r.x;
+        let dy=player.y-r.y;
+        if(Math.hypot(dx,dy)<r.r+15){
+            player.hp-=r.dmg;
+        }
+
+        missiles.forEach((m,mi)=>{
+            if(Math.hypot(m.x-r.x,m.y-r.y)<r.r){
+                r.hp-=player.dmg;
+                missiles.splice(mi,1);
+                if(r.hp<=0){
+                    money+=Math.floor(r.r);
+                    rocks.splice(i,1);
+                }
+            }
+        });
+    });
+
+    document.getElementById("hp").textContent=player.hp;
+    document.getElementById("money").textContent=money;
+    document.getElementById("dmg").textContent=player.dmg;
+
+    requestAnimationFrame(update);
 }
+update();
 
-/* SHIELD */
-ctx.strokeStyle='#4ff';
-ctx.beginPath();
-ctx.arc(mouseX,mouseY,shieldRadius,0,Math.PI*2);
-ctx.stroke();
+// شجرة تطويرات
+const tree=document.getElementById("treeContainer");
+let upgrades=[];
+function addUpgrade(x,y,text,cost,apply){
+    let d=document.createElement("div");
+    d.className="upgrade locked";
+    d.style.left=x+"px";
+    d.style.top=y+"px";
+    d.innerHTML=text+"<br>💰"+cost;
+    d.onclick=()=>{
+        if(money>=cost){
+            money-=cost;
+            d.classList.remove("locked");
+            d.classList.add("unlocked");
+            apply();
+        }
+    };
+    tree.appendChild(d);
 }
+addUpgrade(900,200,"زيادة الضرر",50,()=>player.dmg+=1);
+addUpgrade(700,400,"سرعة صواريخ",80,()=>{});
+addUpgrade(1100,400,"دم إضافي",100,()=>player.hp+=10);
 
-/* LOOP */
-function loop(){
-if(gameRunning){
-spawnRain();
-updateRain();
-
-const t=Math.floor((Date.now()-startTime)/1000);
-document.getElementById('timeDisplay').textContent=
-Math.floor(t/60)+":"+String(t%60).padStart(2,"0");
-document.getElementById('hpDisplay').textContent=hp;
-document.getElementById('killsDisplay').textContent=kills;
-document.getElementById('coinsCorner').textContent=coins;
-}
-draw();
-requestAnimationFrame(loop);
-}
-loop();
-
-/* MENUS */
-function startGame(){
-document.getElementById('mainMenu').style.display='none';
-document.getElementById('hud').style.display='block';
-document.getElementById('shopCorner').style.display='block';
-hp=maxHP;
-coins=0;
-kills=0;
-startTime=Date.now();
-gameRunning=true;
-}
-
-function endGame(){
-gameRunning=false;
-alert("GAME OVER");
-location.reload();
-}
-
-/* SHOP */
-function openShop(){
-gameRunning=false;
-document.getElementById('upgradeShop').style.display='block';
-renderShop();
-}
-function closeShop(){
-document.getElementById('upgradeShop').style.display='none';
-gameRunning=true;
-}
-
-function renderShop(){
-document.getElementById('upgradesGrid').innerHTML=`
-<div class="upgrade-box expanded">
-<div>🛡 Shield</div>
-<div class="upgrade-details">
-<button class="buy-button" onclick="shieldRadius+=5">BUY</button>
-</div>
-</div>`;
+function toggleUpgrades(){
+    let u=document.getElementById("upgradeMenu");
+    u.style.display = u.style.display==="block"?"none":"block";
 }
 </script>
+
 </body>
 </html>
