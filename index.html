@@ -3,7 +3,7 @@
 <head>
 <meta charset="utf-8" />
 <meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover"/>
-<title>Space Master — Ultimate</title>
+<title>Space Master — Difficulty & Golden Rocks</title>
 <style>
 :root{
   --bg1:#020417; --bg2:#000006;
@@ -13,9 +13,6 @@
 html,body{height:100%;margin:0;background:linear-gradient(180deg,var(--bg1),var(--bg2));-webkit-user-select:none;user-select:none}
 canvas{display:block;position:fixed; inset:0; z-index:0;}
 /* UI */
-#overlay {position:fixed;inset:0;z-index:60;display:flex;align-items:center;justify-content:center;pointer-events:auto}
-#modeSelect{position:fixed;inset:0;background:linear-gradient(180deg, rgba(0,0,0,0.85), rgba(0,0,0,0.95));display:flex;align-items:center;justify-content:center;flex-direction:column;gap:18px;z-index:120}
-.modeBtn{padding:14px 28px;border-radius:12px;border:1px solid rgba(255,255,255,0.06);background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.08));font-size:18px;cursor:pointer;color:#eaffff}
 #topBar{position:fixed;left:12px;right:12px;top:10px;display:flex;justify-content:space-between;align-items:center;z-index:70;pointer-events:none}
 .title{font-weight:800;font-size:18px;pointer-events:auto}
 .topBtns{pointer-events:auto;display:flex;gap:8px}
@@ -27,29 +24,13 @@ canvas{display:block;position:fixed; inset:0; z-index:0;}
 /* joystick */
 #joystick{position:fixed;left:50%;transform:translateX(-50%);bottom:120px;width:150px;height:150px;border-radius:50%;background:rgba(255,255,255,0.03);display:none;z-index:80;border:1px solid rgba(255,255,255,0.04);pointer-events:auto;touch-action:none;}
 #stick{position:absolute;left:50%;top:50%;transform:translate(-50%,-50%);width:64px;height:64px;border-radius:50%;background:linear-gradient(180deg,#cfd,#909);box-shadow:0 10px 30px rgba(0,0,0,0.6)}
-/* upgrade overlay */
-#upgradeOverlay{position:fixed;inset:0;background:linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.9));display:none;z-index:110;align-items:center;justify-content:center}
-.upgradePanel{width:92%;max-width:1300px;height:88%;background:linear-gradient(180deg, rgba(8,12,20,0.9), rgba(2,4,8,0.98));border-radius:14px;padding:14px;display:flex;gap:12px;box-shadow:0 30px 80px rgba(0,0,0,0.6);border:1px solid rgba(0,255,255,0.04);pointer-events:auto}
-.leftCol{width:320px;display:flex;flex-direction:column;gap:12px}
-.infoCard{background:linear-gradient(180deg, rgba(255,255,255,0.02), rgba(0,0,0,0.12));padding:12px;border-radius:10px;border:1px solid rgba(255,255,255,0.02)}
-.treeWrap{flex:1;position:relative;overflow:hidden;border-radius:10px;background:radial-gradient(ellipse at 30% 10%, rgba(0,255,220,0.02), transparent 6%), radial-gradient(ellipse at 80% 90%, rgba(139,92,255,0.012), transparent 6%);pointer-events:auto}
-#treeArea{position:absolute;left:0;top:0;width:2400px;height:1600px;cursor:grab}
-.node{position:absolute;width:190px;padding:10px 12px;border-radius:12px;background:linear-gradient(180deg, rgba(255,255,255,0.015), rgba(0,0,0,0.12));border:2px solid rgba(255,255,255,0.04);box-shadow:0 10px 28px rgba(0,0,0,0.6);text-align:center;cursor:pointer;transition:transform .15s,box-shadow .15s,opacity .15s}
-.node.locked{opacity:0.26;filter:grayscale(.2)}
-.node.unlocked{border-color:var(--neon);box-shadow:0 10px 38px rgba(0,240,255,0.06)}
-.node.buyable{animation:pulse 1.2s infinite}
-.node .title{font-weight:800;color:#e9ffff;margin-bottom:6px}
-.node .sub{font-size:12px;color:rgba(220,255,255,0.7)}
-.node .cost{position:absolute;right:8px;top:8px;background:rgba(0,0,0,0.35);padding:4px 8px;border-radius:8px;font-weight:800;font-size:12px;color:#ffd}
-.node .lvl{position:absolute;left:8px;top:8px;font-size:12px;color:rgba(200,255,255,0.9)}
+/* settings modal */
+#settingsModal{position:fixed;inset:0;background:rgba(0,0,0,0.6);display:none;z-index:120;align-items:center;justify-content:center}
+.settingsCard{width:360px;background:linear-gradient(180deg, rgba(10,14,22,0.96), rgba(4,6,10,0.98));border-radius:12px;padding:14px;border:1px solid rgba(0,255,255,0.04)}
+.row{display:flex;align-items:center;justify-content:space-between;margin:10px 0}
+.select, input[type="range"]{width:100%}
+.small{font-size:13px;color:rgba(200,240,255,0.7)}
 .tooltip{position:fixed;z-index:9999;padding:8px 10px;background:rgba(2,6,20,0.9);border-radius:8px;border:1px solid rgba(0,255,255,0.06);display:none;pointer-events:none}
-
-/* responsive */
-@media (max-width:800px){
-  .leftCol{display:none}
-  .upgradePanel{padding:8px}
-  #joystick{width:180px;height:180px}
-}
 </style>
 </head>
 <body>
@@ -57,20 +38,12 @@ canvas{display:block;position:fixed; inset:0; z-index:0;}
 <canvas id="bg"></canvas>
 <canvas id="game"></canvas>
 
-<div id="modeSelect">
-  <div style="text-align:center;color:#dff;font-size:22px;font-weight:800;margin-bottom:6px">اختار جهاز اللعب</div>
-  <div style="display:flex;gap:12px">
-    <button id="btnPC" class="modeBtn">PC — ماوس</button>
-    <button id="btnMobile" class="modeBtn">جوال — لمس</button>
-  </div>
-  <div style="margin-top:12px;color:rgba(200,255,255,0.7);font-size:12px">تقدر تغيّر الوضع بعدين عن طريق زر "شجرة التطوير"</div>
-</div>
-
 <div id="topBar">
-  <div class="title">🚀 Space Master</div>
+  <div class="title">🚀 Space Master — Updated</div>
   <div class="topBtns">
     <button id="openTree" class="btn">🌳 شجرة التطوير</button>
-    <button id="resetBtn" class="btn" title="إعادة الإعدادات">إعادة</button>
+    <button id="openSettings" class="btn">⚙️ Settings</button>
+    <button id="resetBtn" class="btn" title="إعادة الحفظ">إعادة</button>
   </div>
 </div>
 
@@ -83,87 +56,127 @@ canvas{display:block;position:fixed; inset:0; z-index:0;}
 
 <div id="joystick"><div id="stick"></div></div>
 
-<div id="upgradeOverlay">
-  <div class="upgradePanel">
-    <div class="leftCol">
-      <div class="infoCard">
-        <div style="display:flex;justify-content:space-between;align-items:center">
-          <div>
-            <div style="font-weight:800">شجرة المهارات</div>
-            <div style="font-size:12px;color:rgba(200,240,255,0.7)">اشترِ لفتح فروع جديدة — اسحب الشجرة لتحريكها</div>
-          </div>
-          <div style="display:flex;flex-direction:column;gap:8px">
-            <button id="closeTree" class="btn" style="background:linear-gradient(90deg,#fff,#b6f7ff)">رجوع</button>
-            <button id="resetTree" class="btn" style="background:linear-gradient(90deg,#ff9,#f98)">اعادة الشجرة</button>
-          </div>
-        </div>
-      </div>
+<!-- settings modal -->
+<div id="settingsModal">
+  <div class="settingsCard">
+    <div style="font-weight:800;font-size:16px">Settings</div>
+    <div class="small" style="margin-top:6px">الوضع الافتراضي الآن: PC — غيره من هنا</div>
 
-      <div class="infoCard">
-        <div style="font-weight:800">احصائيات السفينه</div>
-        <div style="margin-top:6px;font-size:13px;color:rgba(200,240,255,0.8)">
-          💥 ضرر: <span id="statDmg">3</span><br>
-          ⏱️ زمن إطلاق: <span id="statRate">2000</span>ms<br>
-          🚀 عدد الصواريخ: <span id="statMiss">1</span><br>
-          ❤ حد صحة: <span id="statMaxHP">20</span>
-        </div>
-      </div>
-
-      <div class="infoCard">
-        <div style="font-weight:800">نصائح سريعة</div>
-        <ul style="margin:8px 0 0 18px;color:rgba(200,240,255,0.85);font-size:13px">
-          <li>ابدأ بشراء جذور الشجرة لفتح مسارات متقدمة</li>
-          <li>كلما كبرت الصخور، زادت الفلوس</li>
-          <li>إذا لعبت على الجوال، اسحب الدائرة لتحرك السفينة</li>
-        </ul>
-      </div>
-
+    <div class="row">
+      <div>وضع التحكم</div>
+      <select id="controlSelect" class="select">
+        <option value="pc">PC — ماوس (افتراضي)</option>
+        <option value="mobile">Mobile — جوال (لمس / جوستيك)</option>
+      </select>
     </div>
 
-    <div class="treeWrap">
-      <div id="treeArea"></div>
+    <div class="row">
+      <div>مستوى الصوت</div>
+      <input id="volRange" type="range" min="0" max="1" step="0.01" value="0.6">
     </div>
 
+    <div class="row">
+      <div>تشغيل مؤثرات صوتية</div>
+      <input id="fxToggle" type="checkbox" checked>
+    </div>
+
+    <div style="display:flex;gap:8px;justify-content:flex-end;margin-top:12px">
+      <button id="saveSettings" class="btn">حفظ</button>
+      <button id="closeSettings" class="btn" style="background:linear-gradient(90deg,#fff,#b6f7ff)">إغلاق</button>
+    </div>
+  </div>
+</div>
+
+<div id="upgradeOverlay" style="display:none;z-index:110;position:fixed;inset:0;background:linear-gradient(180deg, rgba(0,0,0,0.6), rgba(0,0,0,0.9));align-items:center;justify-content:center">
+  <div style="width:92%;max-width:1200px;height:86%;background:linear-gradient(180deg, rgba(8,12,20,0.9), rgba(2,4,8,0.98));border-radius:12px;padding:12px;display:flex;gap:12px;box-shadow:0 30px 80px rgba(0,0,0,0.6);border:1px solid rgba(0,255,255,0.04)">
+    <div style="width:320px;display:flex;flex-direction:column;gap:12px">
+      <div style="font-weight:800">شجرة المهارات</div>
+      <div style="font-size:13px;color:rgba(200,240,255,0.7)">اشترِ لفتح فروع جديدة — اسحب الشجرة لتحريكها</div>
+      <div style="display:flex;gap:8px;margin-top:auto">
+        <button id="closeTreeBtn" class="btn">رجوع</button>
+        <button id="resetTree" class="btn" style="background:linear-gradient(90deg,#ff9,#f98)">اعادة الشجرة</button>
+      </div>
+    </div>
+
+    <div style="flex:1;position:relative;border-radius:8px;background:radial-gradient(ellipse at 30% 10%, rgba(0,255,220,0.02), transparent 6%), radial-gradient(ellipse at 80% 90%, rgba(139,92,255,0.012), transparent 6%)">
+      <div id="treeArea" style="position:absolute;left:0;top:0;width:2200px;height:1600px;cursor:grab"></div>
+    </div>
   </div>
 </div>
 
 <div id="tooltip" class="tooltip"></div>
 
 <script>
-/* ------------------------------- setup canvases ------------------------------- */
+/* --------------------------- canvases --------------------------- */
 const bg = document.getElementById('bg'), game = document.getElementById('game');
 const ctxBG = bg.getContext('2d'), ctx = game.getContext('2d');
 function resize(){ bg.width = game.width = innerWidth; bg.height = game.height = innerHeight; }
 addEventListener('resize', resize); resize();
 
-/* ------------------------------- audio helper ------------------------------- */
-const audioCtx = window.AudioContext ? new AudioContext() : null;
-function tone(freq,d=0.03,vol=0.04){
-  if(!audioCtx) return;
-  const o = audioCtx.createOscillator(); const g = audioCtx.createGain();
-  o.type='sine'; o.frequency.value = freq; g.gain.value = vol;
-  o.connect(g); g.connect(audioCtx.destination); o.start(); o.stop(audioCtx.currentTime + d);
+/* --------------------------- audio (fx manager) --------------------------- */
+const AudioCtx = window.AudioContext ? new AudioContext() : null;
+let masterGain = null;
+if(AudioCtx){ masterGain = AudioCtx.createGain(); masterGain.gain.value = 0.6; masterGain.connect(AudioCtx.destination); }
+function setVolume(v){ if(masterGain) masterGain.gain.value = v; }
+
+/* a single playFX implementation used across script */
+function playFX(name){
+  if(!AudioCtx) return;
+  // check settings
+  if(!state.settings || state.settings.fx === false) return;
+  const now = AudioCtx.currentTime;
+  if(name === 'fire'){
+    const o = AudioCtx.createOscillator(); const g = AudioCtx.createGain();
+    o.type = 'sawtooth'; o.frequency.value = 800 + Math.random()*120; g.gain.value = 0.03;
+    o.connect(g); g.connect(masterGain); o.start(now); o.stop(now + 0.055);
+  } else if(name === 'hit'){
+    const o = AudioCtx.createOscillator(); const g = AudioCtx.createGain();
+    o.type='triangle'; o.frequency.value = 340 + Math.random()*80; g.gain.value = 0.04; o.connect(g); g.connect(masterGain); o.start(now); o.stop(now + 0.07);
+  } else if(name === 'destroy'){
+    for(let i=0;i<3;i++){ const o = AudioCtx.createOscillator(); const g = AudioCtx.createGain(); o.type='sine'; o.frequency.value = 220 + i*60; g.gain.value = 0.02; o.connect(g); g.connect(masterGain); o.start(now + i*0.01); o.stop(now + 0.12 + i*0.02); }
+  } else if(name === 'upgrade'){
+    const o = AudioCtx.createOscillator(); const g = AudioCtx.createGain(); o.type='triangle'; o.frequency.value = 1200; g.gain.value = 0.03; o.connect(g); g.connect(masterGain); o.start(now); o.stop(now + 0.12);
+  } else if(name === 'spawn'){
+    const o = AudioCtx.createOscillator(); const g = AudioCtx.createGain(); o.type='sine'; o.frequency.value = 300; g.gain.value = 0.01; o.connect(g); g.connect(masterGain); o.start(now); o.stop(now + 0.06);
+  } else if(name === 'death'){
+    const o = AudioCtx.createOscillator(); const g = AudioCtx.createGain(); o.type='sawtooth'; o.frequency.value = 120; g.gain.value = 0.06; o.connect(g); g.connect(masterGain); o.start(now); o.stop(now + 0.28);
+  }
 }
 
-/* ------------------------------- persistent save ------------------------------- */
-const SAVE = 'space_master_v2';
-let state = { money:0, score:0, upgrades:{}, mode:null };
-try{ const s = localStorage.getItem(SAVE); if(s) state = JSON.parse(s);}catch(e){}
-function saveState(){ localStorage.setItem(SAVE, JSON.stringify(state)); }
+/* --------------------------- persistent state --------------------------- */
+const SAVE = 'space_master_settings_v2';
+let state = { money:0, score:0, upgrades:{}, settings:{ mode:'pc', volume:0.6, fx:true } };
+try{ const s = localStorage.getItem(SAVE); if(s) state = JSON.parse(s); }catch(e){}
+setVolume(state.settings.volume || 0.6);
 
-/* ------------------------------- game state ------------------------------- */
-let mode = state.mode || null;
+/* --------------------------- core objects & defaults --------------------------- */
+let mode = state.settings.mode || 'pc'; // default PC
 const joystick = document.getElementById('joystick'), stick = document.getElementById('stick');
-let stickCenter = null, stickPos = {x:0,y:0}, stickDragging=false;
+if(mode === 'mobile') joystick.style.display = 'block'; else joystick.style.display = 'none';
 
-/* player */
 const player = { x: innerWidth/2, y: innerHeight/2, r:20, health:20, maxHealth:20, damage:3, fireRate:1800, missiles:1, missileSpeed:6, speed:3, shield:0, regen:0 };
 
-/* entities */
 let rocks = [], missiles = [], particles = [];
 
-/* spawn */
+/* ----- DIFFICULTY + SURVIVAL TRACKING ----- */
+let startSurvival = performance.now(); // time since last death/spawn reset
+let difficultyTimer = performance.now();
+let difficultyLevel = 0;
+let goldenChance = 0.01; // base chance for golden rock spawn (1%)
+const DIFF_INCREASE_INTERVAL = 20000; // every 20s increase difficulty
+const MAX_GOLDEN_CHANCE = 0.18; // max 18%
+
+/* ----- spawn config ----- */
+const spawnConfig = {
+  baseSpawnInterval: 1200,
+  spawnInterval: 1200,
+  minSpawnInterval: 350,
+  baseRockSpeed: 0.45, // lowered base speed a bit (we slowed rocks)
+};
+
+/* spawn rock with random velocity; can be golden */
 function spawnRock(edge){
+  const isGolden = Math.random() < goldenChance;
   const r = Math.random()*38 + 12;
   let x,y;
   const side = edge ?? Math.floor(Math.random()*4);
@@ -171,11 +184,25 @@ function spawnRock(edge){
   else if(side===1){ x = innerWidth + r+10; y = Math.random()*innerHeight; }
   else if(side===2){ x = Math.random()*innerWidth; y = -r-10; }
   else { x = Math.random()*innerWidth; y = innerHeight + r + 10; }
-  rocks.push({ x, y, r, hp: Math.ceil(r/3)*6, baseSpeed: 0.5 + Math.random()*0.9, value: Math.ceil(r/3)*6});
+  // random direction velocity
+  const angle = Math.random() * Math.PI * 2;
+  const speed = spawnConfig.baseRockSpeed + Math.random()*0.6; // base + small random
+  const vx = Math.cos(angle) * speed;
+  const vy = Math.sin(angle) * speed;
+  const baseHP = Math.ceil(r/3)*6;
+  const baseValue = Math.ceil(r/3)*6;
+  if(isGolden){
+    rocks.push({ x, y, r: r*1.05, hp: Math.ceil(baseHP*1.9), vx, vy, baseSpeed: speed, value: Math.ceil(baseValue*3), golden:true });
+  } else {
+    rocks.push({ x, y, r, hp: baseHP, vx, vy, baseSpeed: speed, value: baseValue, golden:false });
+  }
+  playFX('spawn');
 }
-for(let i=0;i<10;i++) spawnRock();
 
-/* ------------------------------- upgrades tree definitions ------------------------------- */
+/* spawn initial */
+for(let i=0;i<8;i++) spawnRock();
+
+/* --------------------------- upgrades (same defs) --------------------------- */
 const UP = {
   damage: {name:'جذر: ضرر', desc:'يزيد ضرر الصواريخ', cost:60, max:6, deps:[], apply:lvl=> player.damage = 3 + lvl*2},
   fireRate: {name:'جذر: سرعة اطلاق', desc:'يقلل زمن الإطلاق', cost:80, max:6, deps:['damage'], apply:lvl=> player.fireRate = Math.max(250, 1800 - lvl*220)},
@@ -185,195 +212,220 @@ const UP = {
   money: {name:'ذهب', desc:'زيادة مكافآت التدمير', cost:120, max:5, deps:['missiles'], apply:lvl=> player.moneyMul = 1 + lvl*0.18},
   hpMax: {name:'قلب اقوى', desc:'زيادة الحد الأقصى للصحة', cost:120, max:5, deps:['fireRate'], apply:lvl=> { player.maxHealth = 20 + lvl*6; if(player.health>player.maxHealth) player.health = player.maxHealth } },
   regen: {name:'تجدد', desc:'استرجاع صحة بمرور الوقت', cost:160, max:3, deps:['hpMax'], apply:lvl=> player.regen = lvl},
-  rockDensity: {name:'زخم الصخور', desc:'يزيد معدل الظهور', cost:110, max:5, deps:['fireRate'], apply:lvl=> game.spawnInterval = Math.max(300, game.baseSpawn - lvl*100)},
-  rockSpeed: {name:'سرعة الصخور', desc:'يزيد سرعة الصخور', cost:110, max:5, deps:['rockDensity'], apply:lvl=> game.rockBase = 0.5 + lvl*0.2},
+  rockDensity: {name:'زخم الصخور', desc:'يزيد معدل الظهور', cost:110, max:5, deps:['fireRate'], apply:lvl=> spawnConfig.spawnInterval = Math.max(spawnConfig.minSpawnInterval, spawnConfig.baseSpawnInterval - lvl*100)},
+  rockSpeed: {name:'سرعة الصخور', desc:'يزيد سرعة الصخور', cost:110, max:5, deps:['rockDensity'], apply:lvl=> spawnConfig.baseRockSpeed = 0.45 + lvl*0.12},
   homing: {name:'تتبع', desc:'تحسن تتبع الصواريخ', cost:130, max:3, deps:['missiles'], apply:lvl=> player.homing = lvl},
   shield: {name:'درع', desc:'درع يمتص ضرر مؤقت', cost:190, max:3, deps:['hpMax'], apply:lvl=> player.shieldMax = lvl*8},
   split: {name:'تشظي', desc:'تصنع شظايا عند الاصابة', cost:170, max:3, deps:['explosion'], apply:lvl=> player.split = lvl},
   speed: {name:'سرعة', desc:'تزيد سرعة الحركة', cost:100, max:4, deps:[], apply:lvl=> player.speed = 3 + lvl*1.0}
 };
-/* initialize saved upgrades */
 if(!state.upgrades) state.upgrades = {};
 for(const k in UP) if(state.upgrades[k]===undefined) state.upgrades[k] = 0;
-
-/* apply upgrades */
 function applyAllUpgrades(){
-  // reset base
   player.damage = 3; player.fireRate = 1800; player.missiles = 1; player.missileSpeed = 6; player.moneyMul = 1; player.regen = 0; player.shieldMax = 0; player.explosion = 0; player.homing=0; player.split=0; player.speed=3; player.maxHealth=20;
-  for(const id in UP){
-    const lvl = state.upgrades[id] || 0;
-    if(typeof UP[id].apply === 'function') UP[id].apply(lvl);
-  }
+  for(const id in UP){ const lvl = state.upgrades[id]||0; if(typeof UP[id].apply === 'function') UP[id].apply(lvl); }
   if(!player.health) player.health = player.maxHealth;
 }
 applyAllUpgrades();
 
-/* ------------------------------- game variables ------------------------------- */
-const game = { paused:false, baseSpawn:1200, spawnInterval:1200, rockBase:0.5, lastSpawn:performance.now(), lastFire:performance.now(), passiveTick:performance.now() };
-
-/* ------------------------------- input handling ------------------------------- */
+/* --------------------------- inputs & joystick --------------------------- */
 let mouse = {x:player.x, y:player.y};
-addEventListener('mousemove', e=>{ if(mode==='pc') { mouse.x = e.clientX; mouse.y = e.clientY; } });
-
-/* joystick handlers (mobile) */
+addEventListener('mousemove', e=>{ if(mode==='pc'){ mouse.x = e.clientX; mouse.y = e.clientY; }});
+let stickPos = {x:0,y:0};
 let activeTouchId = null;
-function startStick(e){
-  stickDragging = true;
-  joystick.style.display = 'block';
-}
-function stopStick(){
-  stickDragging = false; stick.style.transform = ''; stickPos = {x:0,y:0};
-}
-function moveStick(dx,dy){
-  const max = 60;
-  const mag = Math.hypot(dx,dy);
-  const clx = (mag>max) ? dx * max/mag : dx;
-  const cly = (mag>max) ? dy * max/mag : dy;
-  stick.style.transform = `translate(${clx}px, ${cly}px)`;
-  stickPos = { x: clx / max, y: cly / max };
-}
+game.addEventListener('touchstart', ev=>{ if(mode!=='mobile') return; const t = ev.touches[0]; activeTouchId = t.identifier; });
+game.addEventListener('touchmove', ev=>{ if(mode!=='mobile') return; for(const t of ev.touches){ if(t.identifier === activeTouchId){ const dx = t.clientX - innerWidth/2; const dy = t.clientY - (innerHeight - 120); const max = 60; const mag = Math.hypot(dx,dy); const clx = (mag>max)? dx*max/mag : dx; const cly = (mag>max)? dy*max/mag : dy; stick.style.transform = `translate(${clx}px, ${cly}px)`; stickPos = {x:clx/max, y:cly/max}; } }});
+game.addEventListener('touchend', ev=>{ activeTouchId=null; stick.style.transform='translate(0,0)'; stickPos={x:0,y:0}; });
 
-/* touch events for joystick */
-game.addEventListener('touchstart', ev=>{
-  if(mode!=='mobile') return;
-  const t = ev.touches[0];
-  activeTouchId = t.identifier;
-  const sx = t.clientX, sy = t.clientY;
-  // place joystick center near bottom if not visible
-  const j = document.getElementById('joystick');
-  const rect = j.getBoundingClientRect();
-  // center at bottom middle by default; we'll set relative movement
-  stick.style.transform = 'translate(0,0)';
-  stickPos = {x:0,y:0};
-});
-game.addEventListener('touchmove', ev=>{
-  if(mode!=='mobile') return;
-  for(const t of ev.touches){
-    if(t.identifier === activeTouchId){
-      const dx = t.clientX - innerWidth/2;
-      const dy = t.clientY - (innerHeight - 120);
-      moveStick(dx,dy);
-    }
-  }
-});
-game.addEventListener('touchend', ev=>{
-  activeTouchId = null; stick.style.transform='translate(0,0)'; stickPos = {x:0,y:0};
-});
-
-/* keyboard fallback */
-const keys = {};
-addEventListener('keydown', e=>{ keys[e.key.toLowerCase()] = true; if(e.key.toLowerCase()==='u') toggleTree(); });
+const keys = {}; addEventListener('keydown', e=>{ keys[e.key.toLowerCase()]=true; if(e.key.toLowerCase()==='u') toggleTree(); });
 addEventListener('keyup', e=> keys[e.key.toLowerCase()] = false);
 
-/* ------------------------------- firing logic ------------------------------- */
+/* --------------------------- firing & destroy --------------------------- */
 function autoFire(now){
   if(now - game.lastFire < (player.fireRate || 1800)) return;
   game.lastFire = now;
   const count = player.missiles || 1;
   for(let i=0;i<count;i++){
-    if(rocks.length===0) continue;
+    if(rocks.length===0) return;
     let target = rocks.reduce((a,b)=> (Math.hypot(a.x-player.x,a.y-player.y) < Math.hypot(b.x-player.x,b.y-player.y) ? a : b));
     if(Math.random() < 0.18 && rocks.length>2) target = rocks[Math.floor(Math.random()*rocks.length)];
     const angle = Math.atan2((target.y-player.y)+(Math.random()-0.5)*30, (target.x-player.x)+(Math.random()-0.5)*30);
     const vx = Math.cos(angle)*(player.missileSpeed||6), vy = Math.sin(angle)*(player.missileSpeed||6);
     missiles.push({ x:player.x + Math.cos(angle)*player.r, y:player.y + Math.sin(angle)*player.r, vx, vy, target });
   }
-  tone(760,0.02,0.02);
-}
-
-/* ------------------------------- game loop & physics ------------------------------- */
-function updatePlayer(dt){
-  if(mode==='pc'){
-    const dx = mouse.x - player.x, dy = mouse.y - player.y;
-    player.x += dx * 0.06 * (dt/16); player.y += dy * 0.06 * (dt/16);
-  } else if(mode==='mobile'){
-    player.x += (stickPos.x || 0) * player.speed * 4 * (dt/16);
-    player.y += (stickPos.y || 0) * player.speed * 4 * (dt/16);
-  } else {
-    // keyboard fallback
-    let ax=0, ay=0; if(keys['w']) ay-=1; if(keys['s']) ay+=1; if(keys['a']) ax-=1; if(keys['d']) ax+=1;
-    const mag = Math.hypot(ax,ay) || 1;
-    player.x += (ax/mag) * player.speed * 2 * (dt/16); player.y += (ay/mag) * player.speed * 2 * (dt/16);
-  }
-  player.x = Math.max(0, Math.min(innerWidth, player.x));
-  player.y = Math.max(0, Math.min(innerHeight, player.y));
+  playFX('fire');
 }
 
 function destroyRock(i){
-  const r = rocks[i];
-  if(!r) return;
+  const r = rocks[i]; if(!r) return;
   const reward = Math.ceil(r.value * (player.moneyMul || 1));
   state.money = (state.money || 0) + reward; state.score = (state.score || 0) + Math.ceil(r.r/2);
-  for(let p=0;p<20;p++) particles.push({x:r.x,y:r.y,vx:(Math.random()-0.5)*6,vy:(Math.random()-0.5)*6,life:24,col:'#ffd4a3'});
-  if(r.r > 22){
+  for(let p=0;p<18;p++) particles.push({x:r.x,y:r.y,vx:(Math.random()-0.5)*6,vy:(Math.random()-0.5)*6,life:24,col:'#ffd4a3'});
+  if(!r.golden && r.r > 22){
     const parts = Math.min(3, Math.floor(r.r/14));
-    for(let k=0;k<parts;k++) rocks.push({ x: r.x + (Math.random()-0.5)*20, y: r.y + (Math.random()-0.5)*20, r: r.r*(0.45+Math.random()*0.2), hp: Math.ceil(r.r*0.5), baseSpeed: 0.3 + Math.random()*0.6, value: Math.ceil(r.r*0.4/3)*6 });
+    for(let k=0;k<parts;k++) rocks.push({ x: r.x + (Math.random()-0.5)*20, y: r.y + (Math.random()-0.5)*20, r: r.r*(0.45+Math.random()*0.2), hp: Math.ceil(r.r*0.5), vx:(Math.random()*1-0.5)*1.2, vy:(Math.random()*1-0.5)*1.2, baseSpeed: 0.3 + Math.random()*0.6, value: Math.ceil(r.r*0.4/3)*6, golden:false });
   }
   rocks.splice(i,1);
   setTimeout(()=> spawnRock(Math.floor(Math.random()*4)), 600 + Math.random()*900);
-  saveState(); tone(260,0.02,0.06);
+  playFX('destroy'); saveState();
 }
 
-function spawnIfNeeded(now){
-  if(now - game.lastSpawn > game.spawnInterval){ game.lastSpawn = now; spawnRock(Math.floor(Math.random()*4)); }
+/* --------------------------- difficulty escalation --------------------------- */
+function maybeIncreaseDifficulty(now){
+  // increase difficulty every DIFF_INCREASE_INTERVAL of surviving
+  const survived = now - startSurvival;
+  const increments = Math.floor(survived / DIFF_INCREASE_INTERVAL);
+  if(increments > difficultyLevel){
+    difficultyLevel = increments;
+    // decrease spawn interval gradually
+    spawnConfig.spawnInterval = Math.max(spawnConfig.minSpawnInterval, spawnConfig.baseSpawnInterval - difficultyLevel * 90);
+    // increase golden chance gradually but capped
+    goldenChance = Math.min(MAX_GOLDEN_CHANCE, 0.01 + difficultyLevel * 0.02);
+    // slightly increase base rock speed
+    spawnConfig.baseRockSpeed = Math.min(1.4, spawnConfig.baseRockSpeed + difficultyLevel * 0.02);
+    // give a small audio cue
+    playFX('upgrade');
+  }
+  // also increase difficulty based on score
+  const extraFromScore = Math.floor((state.score||0) / 50);
+  if(extraFromScore > difficultyLevel){
+    difficultyLevel = extraFromScore;
+    spawnConfig.spawnInterval = Math.max(spawnConfig.minSpawnInterval, spawnConfig.baseSpawnInterval - difficultyLevel * 90);
+    goldenChance = Math.min(MAX_GOLDEN_CHANCE, goldenChance + 0.01);
+  }
 }
 
-function step(now, last, dt){
+/* --------------------------- spawn loop wrapper --------------------------- */
+const game = { paused:false, baseSpawn: spawnConfig.baseSpawnInterval, spawnInterval: spawnConfig.spawnInterval, rockBase:spawnConfig.baseRockSpeed, lastSpawn:performance.now(), lastFire:performance.now(), passiveTick:performance.now() };
+
+/* --------------------------- render helpers --------------------------- */
+function renderBG(now){
+  ctxBG.clearRect(0,0,bg.width,bg.height);
+  const grd = ctxBG.createLinearGradient(0,0,bg.width,bg.height);
+  grd.addColorStop(0,'#001428'); grd.addColorStop(0.6,'#020213'); grd.addColorStop(1,'#000008');
+  ctxBG.fillStyle = grd; ctxBG.fillRect(0,0,bg.width,bg.height);
+  const t = now * 0.00004;
+  for(let i=0;i<5;i++){
+    const rx = (Math.sin(t*(i+1)+i)+1)/2 * bg.width;
+    const ry = (Math.cos(t*(i+2)+i)+1)/2 * bg.height;
+    const rad = Math.min(bg.width,bg.height) * (0.12 + i*0.04);
+    const g = ctxBG.createRadialGradient(rx,ry,rad*0.1, rx,ry,rad);
+    g.addColorStop(0, `rgba(139,92,255,${0.02 + i*0.01})`);
+    g.addColorStop(1, 'rgba(0,0,0,0)');
+    ctxBG.fillStyle = g; ctxBG.fillRect(rx-rad,ry-rad,rad*2,rad*2);
+  }
+  for(let i=0;i<180;i++){
+    const x = (i*37) % bg.width;
+    const y = (i*97 + (now*0.01)) % bg.height;
+    ctxBG.fillStyle = 'rgba(255,255,255,' + (0.28 + (Math.sin((now*0.002)+i)*0.18)) + ')';
+    ctxBG.fillRect(x, y, 1.5, 1.5);
+  }
+}
+
+function drawShip(p){
+  ctx.save(); ctx.translate(p.x, p.y);
+  ctx.beginPath(); ctx.fillStyle = 'rgba(0,240,255,0.06)'; ctx.arc(0,0,p.r+22,0,Math.PI*2); ctx.fill();
+  ctx.beginPath(); ctx.moveTo(p.r,0); ctx.lineTo(-p.r*0.7, -p.r*0.9); ctx.lineTo(-p.r*0.7, p.r*0.9); ctx.closePath();
+  const g = ctx.createLinearGradient(-p.r, -p.r, p.r, p.r); g.addColorStop(0,'#bff'); g.addColorStop(1,'#6ee');
+  ctx.fillStyle = g; ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 1; ctx.stroke();
+  ctx.beginPath(); ctx.fillStyle = '#012028'; ctx.arc(-p.r*0.25,0,p.r*0.42,0,Math.PI*2); ctx.fill();
+  if(p.shield && p.shield > 0){ ctx.beginPath(); ctx.strokeStyle = 'rgba(120,240,255,0.5)'; ctx.lineWidth = 4; ctx.arc(0,0,p.r+12,0,Math.PI*2); ctx.stroke(); }
+  ctx.restore();
+}
+
+function drawRock(r){
+  if(r.golden){
+    // golden rock look
+    const grad = ctx.createRadialGradient(r.x - r.r*0.2, r.y - r.r*0.2, r.r*0.1, r.x, r.y, r.r);
+    grad.addColorStop(0, '#fff4c8'); grad.addColorStop(0.6, '#f5d06a'); grad.addColorStop(1, '#9a6b14');
+    ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = 'rgba(255,230,140,0.25)'; ctx.lineWidth = 2; ctx.stroke();
+  } else {
+    const grad = ctx.createRadialGradient(r.x - r.r*0.3, r.y - r.r*0.3, r.r*0.1, r.x, r.y, r.r);
+    grad.addColorStop(0, '#ddd'); grad.addColorStop(0.6, '#9a9a9a'); grad.addColorStop(1, '#454545');
+    ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, Math.PI*2); ctx.fill();
+    ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 1; ctx.beginPath();
+    ctx.moveTo(r.x - r.r*0.5, r.y - r.r*0.2); ctx.lineTo(r.x + r.r*0.2, r.y + r.r*0.6); ctx.stroke();
+  }
+  ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(r.x - r.r, r.y - r.r - 8, r.r*2, 6);
+  const maxHp = Math.ceil(r.r/3)*6 * (r.golden?1.9:1);
+  ctx.fillStyle = r.golden? '#ffd36b' : '#ff6b6b';
+  ctx.fillRect(r.x - r.r, r.y - r.r - 8, (r.hp / maxHp) * r.r*2, 6);
+}
+
+/* --------------------------- main loop --------------------------- */
+let last = performance.now();
+function loop(now){
+  const dt = now - last;
+  renderBG(now);
   if(!game.paused){
-    updatePlayer(dt);
-    // rocks
+    // difficulty management
+    maybeIncreaseDifficulty(now);
+
+    // update player
+    if(mode==='pc'){
+      const dx = mouse.x - player.x, dy = mouse.y - player.y;
+      player.x += dx * 0.06 * (dt/16); player.y += dy * 0.06 * (dt/16);
+    } else if(mode==='mobile'){
+      player.x += (stickPos.x||0) * player.speed * 4 * (dt/16);
+      player.y += (stickPos.y||0) * player.speed * 4 * (dt/16);
+    } else {
+      let ax=0, ay=0; if(keys['w']) ay-=1; if(keys['s']) ay+=1; if(keys['a']) ax-=1; if(keys['d']) ax+=1;
+      const mag = Math.hypot(ax,ay)||1;
+      player.x += (ax/mag) * player.speed * 2 * (dt/16); player.y += (ay/mag) * player.speed * 2 * (dt/16);
+    }
+    player.x = Math.max(0, Math.min(innerWidth, player.x));
+    player.y = Math.max(0, Math.min(innerHeight, player.y));
+
+    // rocks physics (move by vx,vy; occasional small random drift)
     for(let i=rocks.length-1;i>=0;i--){
       const r = rocks[i];
-      const dx = player.x - r.x, dy = player.y - r.y; const d = Math.hypot(dx,dy) || 1;
-      const speed = (game.rockBase + r.r/110) * (1 + ((state.upgrades && state.upgrades.rockSpeed)||0)*0.05);
-      r.x += (dx/d) * speed * (dt/16); r.y += (dy/d) * speed * (dt/16);
-      // wrap
+      // apply base speed scaling from upgrades/difficulty
+      const speedScale = 1 + ((state.upgrades && state.upgrades.rockSpeed)||0)*0.05 + difficultyLevel*0.02;
+      r.x += r.vx * speedScale * (dt/16);
+      r.y += r.vy * speedScale * (dt/16);
+      // slight drift random
+      r.vx += (Math.random()-0.5)*0.01; r.vy += (Math.random()-0.5)*0.01;
+      // wrap edges
       if(r.x < -r.r - 30) r.x = innerWidth + r.r + 10;
       if(r.x > innerWidth + r.r + 30) r.x = -r.r - 10;
       if(r.y < -r.r - 30) r.y = innerHeight + r.r + 10;
       if(r.y > innerHeight + r.r + 30) r.y = -r.r - 10;
       // collision with player
-      const dist = Math.hypot(r.x-player.x, r.y-player.y);
+      const dist = Math.hypot(r.x - player.x, r.y - player.y);
       if(dist < r.r + player.r){
         let dmg = 2;
-        if(player.shield && player.shield > 0){
-          const take = Math.min(player.shield, dmg); player.shield -= take; dmg -= take;
-        }
+        if(player.shield && player.shield > 0){ const take = Math.min(player.shield, dmg); player.shield -= take; dmg -= take; }
         player.health -= dmg;
-        r.x += (r.x - player.x)/dist * 18; r.y += (r.y - player.y)/dist * 18;
+        r.x += (r.x - player.x)/Math.max(dist,1) * 18; r.y += (r.y - player.y)/Math.max(dist,1) * 18;
         for(let k=0;k<6;k++) particles.push({x:player.x+(Math.random()-0.5)*24,y:player.y+(Math.random()-0.5)*24,vx:(Math.random()-0.5)*3,vy:(Math.random()-0.5)*3,life:12,col:'#ff9d9d'});
-        tone(220,0.02,0.03);
-        if(Math.random() < 0.09) destroyRock(i);
+        playFX('hit');
+        if(Math.random() < 0.07) destroyRock(i);
       }
       if(r.hp <= 0) destroyRock(i);
     }
 
-    // missiles
+    // missiles homing and collisions
     for(let i=missiles.length-1;i>=0;i--){
       const m = missiles[i];
       if(m.target && rocks.includes(m.target)){
-        const tx = m.target.x, ty = m.target.y;
-        const dx = tx - m.x, dy = ty - m.y; const d = Math.hypot(dx,dy) || 1;
+        const tx = m.target.x, ty = m.target.y; const dx = tx - m.x, dy = ty - m.y; const d = Math.hypot(dx,dy)||1;
         const homing = 0.9 + ((player.homing||0)*0.07);
         m.vx = (m.vx * (1-homing)) + (dx/d) * player.missileSpeed * homing;
         m.vy = (m.vy * (1-homing)) + (dy/d) * player.missileSpeed * homing;
       }
       m.x += m.vx * (dt/16); m.y += m.vy * (dt/16);
-      // wrap
       if(m.x < -30) m.x = innerWidth + 30;
       if(m.x > innerWidth + 30) m.x = -30;
       if(m.y < -30) m.y = innerHeight + 30;
       if(m.y > innerHeight + 30) m.y = -30;
-      // collision
       for(let j=rocks.length-1;j>=0;j--){
         const r = rocks[j];
         if(Math.hypot(r.x - m.x, r.y - m.y) < r.r + 6){
-          const crit = Math.random() < (player.crit||0);
-          const baseD = player.damage;
-          const dmg = baseD * (crit ? 2 : 1);
+          const crit = Math.random() < (player.crit||0); const dmg = player.damage * (crit?2:1);
           r.hp -= dmg;
           for(let p=0;p<10;p++) particles.push({x:m.x,y:m.y,vx:(Math.random()-0.5)*4,vy:(Math.random()-0.5)*4,life:18,col: crit ? '#ffd46a' : '#ffb2b2'});
-          tone(540,0.02,0.03);
+          playFX('hit');
           if(player.explosion){
             const rad = 26 * player.explosion;
             for(let rr=rocks.length-1; rr>=0; rr--){
@@ -390,142 +442,72 @@ function step(now, last, dt){
     }
 
     // particles
-    for(let i=particles.length-1;i>=0;i--){
-      const p = particles[i];
-      p.x += p.vx * (dt/16); p.y += p.vy * (dt/16); p.vx *= 0.98; p.vy *= 0.98; p.life--;
-      if(p.life<=0) particles.splice(i,1);
-    }
+    for(let i=particles.length-1;i>=0;i--){ const p = particles[i]; p.x += p.vx * (dt/16); p.y += p.vy * (dt/16); p.vx *= 0.98; p.vy *= 0.98; p.life--; if(p.life<=0) particles.splice(i,1); }
 
     // passive regen
     if(player.regen && now - game.passiveTick > 2000){ player.health = Math.min(player.maxHealth, player.health + player.regen); game.passiveTick = now; }
 
-    // spawn & fire
-    spawnIfNeeded(now); autoFire(now);
+    // spawn & auto-fire
+    if(now - game.lastSpawn > spawnConfig.spawnInterval){ game.lastSpawn = now; // possibly spawn multiple based on difficulty
+      // spawn base one
+      spawnRock(Math.floor(Math.random()*4));
+      // spawn an extra rock occasionally when difficulty is higher
+      if(Math.random() < Math.min(0.5, difficultyLevel * 0.08)) spawnRock(Math.floor(Math.random()*4));
+    }
+    autoFire(now);
 
     // death
     if(player.health <= 0){
-      game.paused = true; openTree();
+      game.paused = true;
+      playFX('death');
+      // reset survival timer on death
+      startSurvival = performance.now();
+      difficultyLevel = 0;
+      goldenChance = 0.01;
     }
   }
-}
 
-/* ------------------------------- rendering (improved visuals) ------------------------------- */
-function renderBG(now){
-  ctxBG.clearRect(0,0,bg.width,bg.height);
-  const grd = ctxBG.createLinearGradient(0,0,bg.width,bg.height);
-  grd.addColorStop(0,'#001428'); grd.addColorStop(0.6,'#020213'); grd.addColorStop(1,'#000008');
-  ctxBG.fillStyle = grd; ctxBG.fillRect(0,0,bg.width,bg.height);
-  // nebula blobs
-  const t = now * 0.00004;
-  for(let i=0;i<5;i++){
-    const rx = (Math.sin(t*(i+1)+i)+1)/2 * bg.width;
-    const ry = (Math.cos(t*(i+2)+i)+1)/2 * bg.height;
-    const rad = Math.min(bg.width,bg.height) * (0.12 + i*0.04);
-    const g = ctxBG.createRadialGradient(rx,ry,rad*0.1, rx,ry,rad);
-    g.addColorStop(0, `rgba(139,92,255,${0.02 + i*0.01})`);
-    g.addColorStop(1, 'rgba(0,0,0,0)');
-    ctxBG.fillStyle = g; ctxBG.fillRect(rx-rad,ry-rad,rad*2,rad*2);
-  }
-  // stars
-  for(let i=0;i<200;i++){
-    const x = (i*37) % bg.width;
-    const y = (i*97 + (now*0.01)) % bg.height;
-    ctxBG.fillStyle = 'rgba(255,255,255,' + (0.3 + (Math.sin((now*0.002)+i)*0.2)) + ')';
-    ctxBG.fillRect(x, y, 1.5, 1.5);
-  }
-}
-
-function drawShip(p){
-  ctx.save(); ctx.translate(p.x, p.y);
-  const angle = 0;
-  // glow
-  ctx.beginPath(); ctx.fillStyle = 'rgba(0,240,255,0.06)'; ctx.arc(0,0,p.r+22,0,Math.PI*2); ctx.fill();
-  // main body (3D-ish)
-  ctx.beginPath(); ctx.moveTo(p.r,0); ctx.lineTo(-p.r*0.7, -p.r*0.9); ctx.lineTo(-p.r*0.7, p.r*0.9); ctx.closePath();
-  const g = ctx.createLinearGradient(-p.r, -p.r, p.r, p.r);
-  g.addColorStop(0,'#bff'); g.addColorStop(1,'#6ee');
-  ctx.fillStyle = g; ctx.fill(); ctx.strokeStyle = 'rgba(0,0,0,0.18)'; ctx.lineWidth = 1; ctx.stroke();
-  // cockpit glass
-  ctx.beginPath(); ctx.fillStyle = '#012028'; ctx.arc(-p.r*0.25,0,p.r*0.42,0,Math.PI*2); ctx.fill();
-  // engine thrusters
-  for(let i=0;i<2;i++){
-    const ex = p.r*0.4; const ey = (i===0? -p.r*0.5 : p.r*0.5);
-    ctx.beginPath();
-    const grad = ctx.createLinearGradient(ex+6,ey, ex-14,ey);
-    grad.addColorStop(0,'rgba(255,200,90,0.7)'); grad.addColorStop(1,'rgba(255,90,50,0.1)');
-    ctx.fillStyle = grad; ctx.ellipse(-p.r*0.9, ey, 6, 10, 0, 0, Math.PI*2); ctx.fill();
-  }
-  // shield ring
-  if(p.shield && p.shield > 0){
-    ctx.beginPath(); ctx.strokeStyle = 'rgba(120,240,255,0.5)'; ctx.lineWidth = 4; ctx.arc(0,0,p.r+12,0,Math.PI*2); ctx.stroke();
-  }
-  ctx.restore();
-}
-
-/* draw rocks with pseudo 3D shading */
-function drawRock(r){
-  // core
-  const grad = ctx.createRadialGradient(r.x - r.r*0.3, r.y - r.r*0.3, r.r*0.1, r.x, r.y, r.r);
-  grad.addColorStop(0, '#ddd'); grad.addColorStop(0.6, '#9a9a9a'); grad.addColorStop(1, '#454545');
-  ctx.fillStyle = grad; ctx.beginPath(); ctx.arc(r.x, r.y, r.r, 0, Math.PI*2); ctx.fill();
-  // some craters — randomized by position hash
-  const c = Math.floor((r.x + r.y) % 4) + 2;
-  for(let i=0;i<c;i++){
-    const ang = (i/c) * Math.PI*2 + (r.x*0.0005);
-    const cx = r.x + Math.cos(ang)*(r.r*0.35);
-    const cy = r.y + Math.sin(ang)*(r.r*0.35);
-    ctx.beginPath(); ctx.fillStyle = 'rgba(0,0,0,0.18)'; ctx.ellipse(cx,cy, r.r*0.14, r.r*0.08, 0,0,Math.PI*2); ctx.fill();
-  }
-  // HP bar
-  ctx.fillStyle = 'rgba(0,0,0,0.45)'; ctx.fillRect(r.x - r.r, r.y - r.r - 8, r.r*2, 6);
-  const maxHp = Math.ceil(r.r/3)*6;
-  ctx.fillStyle = '#ff6b6b'; ctx.fillRect(r.x - r.r, r.y - r.r - 8, (r.hp / maxHp) * r.r*2, 6);
-}
-
-/* render loop */
-let last = performance.now();
-function loop(now){
-  const dt = now - last;
-  renderBG(now);
-  step(now, last, dt);
-  // main render
+  // render
   ctx.clearRect(0,0,game.width,game.height);
-  // draw rocks
   for(const r of rocks) drawRock(r);
-  // draw missiles and trails
-  for(const m of missiles){
-    ctx.beginPath(); ctx.fillStyle = 'rgba(255,150,110,0.95)'; ctx.arc(m.x, m.y, 4, 0, Math.PI*2); ctx.fill();
-    ctx.fillStyle = 'rgba(255,200,130,0.2)'; ctx.fillRect(m.x-2, m.y-10, 4, 8);
-  }
-  // draw particles
+  for(const m of missiles){ ctx.beginPath(); ctx.fillStyle = 'rgba(255,150,110,0.95)'; ctx.arc(m.x, m.y, 4, 0, Math.PI*2); ctx.fill(); ctx.fillStyle = 'rgba(255,200,130,0.2)'; ctx.fillRect(m.x-2, m.y-10, 4, 8); }
   for(const p of particles) { ctx.fillStyle = p.col; ctx.fillRect(p.x, p.y, 2,2); }
-  // draw player
   drawShip(player);
-  // update HUD
   document.getElementById('hpVal').textContent = Math.max(0, Math.floor(player.health));
   document.getElementById('moneyVal').textContent = Math.floor(state.money || 0);
   document.getElementById('scoreVal').textContent = Math.floor(state.score || 0);
   document.getElementById('dmgVal').textContent = player.damage;
-  last = now;
-  requestAnimationFrame(loop);
+  last = now; requestAnimationFrame(loop);
 }
 requestAnimationFrame(loop);
 
-/* ------------------------------- spawn loop & auto-fire interval ------------------------------- */
-setInterval(()=>{ if(!game.paused) spawnRock(Math.floor(Math.random()*4)); }, 1100);
-setInterval(()=>{ if(!game.paused) saveState(); }, 6000);
+/* --------------------------- UI & settings handling --------------------------- */
+const modal = document.getElementById('settingsModal'), openSettings = document.getElementById('openSettings'), closeSettings = document.getElementById('closeSettings'), saveSettings = document.getElementById('saveSettings');
+const controlSelect = document.getElementById('controlSelect'), volRange = document.getElementById('volRange'), fxToggle = document.getElementById('fxToggle');
 
-/* ------------------------------- UI functions: open/close tree ------------------------------- */
-const openTreeBtn = document.getElementById('openTree'), upgradeOverlay = document.getElementById('upgradeOverlay'), closeTree = document.getElementById('closeTree'), resetTree = document.getElementById('resetTree'), treeArea = document.getElementById('treeArea'), tooltip = document.getElementById('tooltip');
+openSettings.addEventListener('click', ()=>{
+  controlSelect.value = state.settings.mode || 'pc';
+  volRange.value = state.settings.volume || 0.6;
+  fxToggle.checked = state.settings.fx !== false;
+  modal.style.display = 'flex';
+});
+closeSettings.addEventListener('click', ()=>{ modal.style.display = 'none'; });
+saveSettings.addEventListener('click', ()=>{
+  state.settings.mode = controlSelect.value;
+  state.settings.volume = parseFloat(volRange.value);
+  state.settings.fx = fxToggle.checked;
+  setVolume(state.settings.volume);
+  mode = state.settings.mode;
+  if(mode === 'mobile') joystick.style.display = 'block'; else joystick.style.display = 'none';
+  modal.style.display = 'none'; saveState(); playFX('upgrade');
+});
 
-openTreeBtn.addEventListener('click', ()=>{ openTree(); });
-closeTree.addEventListener('click', ()=>{ closeTree(); });
+/* --------------------------- tree / upgrade UI (reused) --------------------------- */
+const openTreeBtn = document.getElementById('openTree'), upgradeOverlay = document.getElementById('upgradeOverlay'), closeTreeBtn = document.getElementById('closeTreeBtn'), resetTree = document.getElementById('resetTree'), treeArea = document.getElementById('treeArea'), tooltip = document.getElementById('tooltip');
+openTreeBtn.addEventListener('click', ()=>{ upgradeOverlay.style.display='flex'; game.paused = true; renderTree(); });
+document.getElementById('closeTreeBtn').addEventListener('click', ()=>{ upgradeOverlay.style.display='none'; game.paused=false; saveState(); });
 resetTree.addEventListener('click', ()=>{ if(confirm('اعد تعيين كل التطويرات؟')){ for(const k in state.upgrades) state.upgrades[k]=0; state.money=0; state.score=0; applyAllUpgrades(); saveState(); renderTree(); } });
 
-function openTree(){ upgradeOverlay.style.display='flex'; game.paused = true; renderTree(); }
-function closeTree(){ upgradeOverlay.style.display='none'; game.paused = false; saveState(); }
-
-/* ------------------------------- tree rendering & interaction (deep tree) ------------------------------- */
 const layout = [
   {id:'damage', x:160, y:90},{id:'fireRate', x:420, y:200},{id:'missiles', x:720, y:200},
   {id:'missileSpeed', x:720, y:340},{id:'explosion', x:980, y:440},{id:'split', x:1180, y:560},
@@ -534,23 +516,14 @@ const layout = [
   {id:'shield', x:40, y:640},{id:'speed', x:40, y:840}
 ];
 
-function isUnlockedNode(id){
-  const def = UP[id]; if(!def) return false;
-  if(def.deps.length === 0) return true;
-  return def.deps.some(d => (state.upgrades[d] && state.upgrades[d] > 0));
-}
+function isUnlockedNode(id){ const def = UP[id]; if(!def) return false; if(def.deps.length === 0) return true; return def.deps.some(d => (state.upgrades[d] && state.upgrades[d] > 0)); }
 
 function renderTree(){
   treeArea.innerHTML = '';
-  // svg for lines
-  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg');
-  svg.setAttribute('width','100%'); svg.setAttribute('height','100%'); svg.style.position='absolute'; svg.style.left='0'; svg.style.top='0';
+  const svg = document.createElementNS('http://www.w3.org/2000/svg','svg'); svg.setAttribute('width','100%'); svg.setAttribute('height','100%'); svg.style.position='absolute'; svg.style.left='0'; svg.style.top='0';
   treeArea.appendChild(svg);
-  const cont = document.createElement('div'); cont.style.position='absolute'; cont.style.left='0'; cont.style.top='0'; cont.style.width='2400px'; cont.style.height='1600px';
-  treeArea.appendChild(cont);
-  const pos = {};
-  layout.forEach(n=> pos[n.id] = {x: n.x + 95, y: n.y + 30});
-  // lines
+  const cont = document.createElement('div'); cont.style.position='absolute'; cont.style.left='0'; cont.style.top='0'; cont.style.width='2200px'; cont.style.height='1600px'; treeArea.appendChild(cont);
+  const pos = {}; layout.forEach(n=> pos[n.id] = {x: n.x + 95, y: n.y + 30});
   layout.forEach(node=>{
     const def = UP[node.id]; if(!def) return;
     def.deps.forEach(dep=>{
@@ -562,11 +535,9 @@ function renderTree(){
       path.setAttribute('stroke', color); path.setAttribute('stroke-width','3'); path.setAttribute('fill','none'); svg.appendChild(path);
     });
   });
-  // nodes
   layout.forEach(node=>{
     const def = UP[node.id]; if(!def) return;
-    const el = document.createElement('div'); el.className='node';
-    el.style.left = node.x + 'px'; el.style.top = node.y + 'px';
+    const el = document.createElement('div'); el.className='node'; el.style.left = node.x + 'px'; el.style.top = node.y + 'px';
     const lvl = state.upgrades[node.id] || 0;
     el.innerHTML = `<div class="lvl">Lv.${lvl}/${def.max}</div><div class="title">${def.name}</div><div class="sub">${def.desc}</div><div class="cost">${def.cost}💠</div>`;
     if(lvl >= def.max) el.classList.add('locked');
@@ -582,47 +553,40 @@ function renderTree(){
       if((state.money || 0) < def.cost){ alert('فلوسك قليلة'); return; }
       state.money -= def.cost; state.upgrades[node.id] = (state.upgrades[node.id]||0) + 1;
       UP[node.id].cost = Math.ceil(def.cost * 1.25);
-      applyAllUpgrades(); saveState(); renderTree();
-      tone(980,0.04,0.06);
+      applyAllUpgrades(); saveState(); renderTree(); playFX('upgrade');
     });
     cont.appendChild(el);
   });
 
-  // allow dragging the treeArea by mouse
-  let mouseDown = false, sx=0, sy=0, ox=0, oy=0;
+  // drag
+  let mouseDown=false, sx=0, sy=0, ox=0, oy=0;
   treeArea.style.left = Math.max(0, (innerWidth - 1200)/2) + 'px';
   treeArea.style.top = Math.max(0, (innerHeight - 800)/2) + 'px';
-  treeArea.onmousedown = e=>{ mouseDown=true; sx = e.clientX; sy = e.clientY; ox = parseInt(treeArea.style.left||0); oy = parseInt(treeArea.style.top||0); treeArea.style.cursor='grabbing'; }
+  treeArea.onmousedown = e=>{ mouseDown=true; sx=e.clientX; sy=e.clientY; ox=parseInt(treeArea.style.left||0); oy=parseInt(treeArea.style.top||0); treeArea.style.cursor='grabbing'; }
   window.addEventListener('mousemove', e=>{ if(!mouseDown) return; const dx = e.clientX - sx; const dy = e.clientY - sy; treeArea.style.left = (ox + dx) + 'px'; treeArea.style.top = (oy + dy) + 'px'; });
   window.addEventListener('mouseup', ()=>{ mouseDown=false; treeArea.style.cursor='grab'; });
 }
 
-/* ------------------------------- UI: mode selection buttons working robustly ------------------------------- */
-document.getElementById('btnPC').addEventListener('click', ()=>{ chooseMode('pc'); });
-document.getElementById('btnMobile').addEventListener('click', ()=>{ chooseMode('mobile'); });
-function chooseMode(m){
-  mode = m; state.mode = m; saveState();
-  document.getElementById('modeSelect').style.display = 'none';
-  if(m === 'mobile'){ document.getElementById('joystick').style.display = 'block'; } else { document.getElementById('joystick').style.display = 'none'; }
-  applyAllUpgrades(); player.health = Math.min(player.health || player.maxHealth, player.maxHealth);
-}
+/* --------------------------- helper: toggle tree & save --------------------------- */
+function toggleTree(){ const ov = document.getElementById('upgradeOverlay'); if(ov.style.display === 'flex') { ov.style.display='none'; game.paused=false; saveState(); } else { document.getElementById('upgradeOverlay').style.display='flex'; game.paused=true; renderTree(); } }
+document.getElementById('openTree').addEventListener('click', ()=>{ toggleTree(); });
+document.getElementById('resetBtn').addEventListener('click', ()=>{ if(confirm('تحذف الحفظ بالكامل وتعيد تحميل الصفحة؟')){ localStorage.removeItem(SAVE); location.reload(); } });
 
-/* ------------------------------- open debug / reset ------------------------------- */
-document.getElementById('resetBtn').addEventListener('click', ()=>{
-  if(confirm('اعد تحميل الحاله الاصلية (سيحذف الحفظ)؟')){
-    localStorage.removeItem(SAVE); location.reload();
-  }
-});
+/* --------------------------- save/load --------------------------- */
+function saveState(){ localStorage.setItem(SAVE, JSON.stringify(state)); }
 
-/* ------------------------------- ensure mode visible if saved ------------------------------- */
-if(state.mode){ chooseMode(state.mode); } else { /* show selector */ }
+/* --------------------------- initial UI values --------------------------- */
+document.getElementById('controlSelect').value = state.settings.mode || 'pc';
+document.getElementById('volRange').value = state.settings.volume || 0.6;
+document.getElementById('fxToggle').checked = state.settings.fx !== false;
 
-/* final: save every X seconds */
-setInterval(()=> saveState(), 5000);
+/* --------------------------- periodic tasks --------------------------- */
+setInterval(()=> saveState(), 6000);
+setInterval(()=>{ // small periodic adjust: make spawnConfig reflect difficulty
+  spawnConfig.spawnInterval = Math.max(spawnConfig.minSpawnInterval, spawnConfig.baseSpawnInterval - difficultyLevel * 90);
+}, 4000);
 
-/* keyboard: toggle tree U */
-addEventListener('keydown', e=>{ if(e.key.toLowerCase()==='u') { if(document.getElementById('upgradeOverlay').style.display==='flex') closeTree(); else openTree(); } });
-
+/* --------------------------- done --------------------------- */
 </script>
 </body>
 </html>
